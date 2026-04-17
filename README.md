@@ -20,16 +20,37 @@ snapshot becomes visible through Archive.org indexing APIs.
 
 ## Installation
 
-Install the package with Composer:
+Until the package is published on Packagist, install it from the Git repository.
+
+Add a VCS repository to your Craft project's `composer.json`:
+
+```json
+{
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "git@github.com:Abromeit/craftcms-archive-org-backups.git"
+        }
+    ]
+}
+```
+
+Then require the package from the branch or tag you want to use:
 
 ```bash
-composer require abromeit/craftcms-archive-org-backups
+composer require abromeit/craftcms-archive-org-backups:dev-master
 ```
 
 Then install the plugin in the Craft control panel or with:
 
 ```bash
 php craft plugin/install archive-org-backups
+```
+
+After the package is published on Packagist, the install command can be simplified to:
+
+```bash
+composer require abromeit/craftcms-archive-org-backups
 ```
 
 ## Configuration
