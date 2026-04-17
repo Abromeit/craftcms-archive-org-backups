@@ -133,7 +133,6 @@ final class ArchiveOrgBackups extends Plugin
 
         $item['label'] = Craft::t(self::TRANSLATION_CATEGORY, 'Archive.org Backups');
         $item['url'] = self::HANDLE;
-        $item['icon'] = '@abromeit/archiveorgbackups/icon.png';
         $item['subnav'] = [
             'dashboard' => [
                 'label' => Craft::t(self::TRANSLATION_CATEGORY, 'Overview'),
