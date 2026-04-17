@@ -26,6 +26,22 @@ final class SchedulingServiceTest extends TestCase
         );
     }
 
+    public function testChangedTargetsRespectConfiguredResubmitWindow(): void
+    {
+        $before = time();
+        $nextSubmissionAt = SchedulingService::calculateNextSubmissionAt(
+            '2026-04-16 12:00:00',
+            '2026-04-16 12:00:00',
+            '2026-04-17 12:00:00',
+            7,
+            24
+        );
+        $after = time();
+
+        self::assertGreaterThanOrEqual($before + 86340, $nextSubmissionAt->getTimestamp());
+        self::assertLessThanOrEqual($after + 86460, $nextSubmissionAt->getTimestamp());
+    }
+
     public function testLiveCandidateSelectionPrefersOldestRemoteCheck(): void
     {
         $rows = [

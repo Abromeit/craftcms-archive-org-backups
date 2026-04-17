@@ -102,17 +102,21 @@ final class UrlManifestService extends Component
             return false;
         }
 
-        if ($entry->uri === null || $entry->uri === '__home__') {
-            return $entry->getUrl() !== null;
-        }
-
         $section = $entry->getSection();
 
         if (!$section instanceof Section) {
             return false;
         }
 
-        return in_array($section->uid, ArchiveOrgBackups::plugin()->getSettings()->enabledSectionUids, true);
+        if (!in_array($section->uid, ArchiveOrgBackups::plugin()->getSettings()->enabledSectionUids, true)) {
+            return false;
+        }
+
+        if ($entry->uri === null || $entry->uri === '__home__') {
+            return $entry->getUrl() !== null;
+        }
+
+        return true;
     }
 
     /**

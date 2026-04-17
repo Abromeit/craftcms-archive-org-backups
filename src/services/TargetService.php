@@ -9,7 +9,6 @@ use craft\base\Component;
 use craft\db\Query;
 use craft\elements\Entry;
 use craft\helpers\Db;
-use craft\helpers\UrlHelper;
 use yii\helpers\Json;
 use abromeit\archiveorgbackups\ArchiveOrgBackups;
 use abromeit\archiveorgbackups\records\ArchiveAttemptRecord;
@@ -90,6 +89,17 @@ final class TargetService extends Component
         return count($entryIds);
     }
 
+    public function primeManifest(int $limit): int
+    {
+        $entryIds = ArchiveOrgBackups::plugin()->getManifest()->getTrackedEntryIds(0, $limit);
+
+        foreach ($entryIds as $entryId) {
+            $this->syncEntryId($entryId);
+        }
+
+        return count($entryIds);
+    }
+
     /**
      * @return ArchiveTargetRecord[]
      */
@@ -103,9 +113,9 @@ final class TargetService extends Component
             ->andWhere(['not', ['nextSubmissionAt' => null]])
             ->andWhere(['<=', 'nextSubmissionAt', $now])
             ->andWhere([
-                'not in',
-                'lastJobStatus',
-                [ArchiveOrgBackups::JOB_STATUS_PENDING],
+                'or',
+                ['lastJobStatus' => null],
+                ['<>', 'lastJobStatus', ArchiveOrgBackups::JOB_STATUS_PENDING],
             ])
             ->orderBy([
                 'priority' => SORT_DESC,
@@ -182,9 +192,14 @@ final class TargetService extends Component
         ?string $nextSubmissionAt = null,
         ?int $observedLimit = null
     ): void {
-        $record->lastJobStatus = $outcome === 'quota_exhausted'
-            ? ArchiveOrgBackups::JOB_STATUS_QUOTA_EXHAUSTED
-            : ArchiveOrgBackups::JOB_STATUS_FAILED;
+        if ($outcome === 'quota_exhausted') {
+            $record->lastJobStatus = ArchiveOrgBackups::JOB_STATUS_QUOTA_EXHAUSTED;
+        } elseif ($outcome === 'retry') {
+            $record->lastJobStatus = ArchiveOrgBackups::JOB_STATUS_RETRY;
+        } else {
+            $record->lastJobStatus = ArchiveOrgBackups::JOB_STATUS_FAILED;
+        }
+
         $record->lastError = $message;
         $record->nextSubmissionAt = $nextSubmissionAt;
         $record->save(false);
@@ -253,7 +268,8 @@ final class TargetService extends Component
                     $record->lastSubmittedAt,
                     $record->lastSubmittedSourceDateUpdated,
                     $record->sourceDateUpdated,
-                    ArchiveOrgBackups::plugin()->getScheduling()->getUnchangedRefreshDays()
+                    ArchiveOrgBackups::plugin()->getScheduling()->getUnchangedRefreshDays(),
+                    ArchiveOrgBackups::plugin()->getScheduling()->getChangedTargetWindowHours()
                 )
             );
         } else {
@@ -281,6 +297,9 @@ final class TargetService extends Component
     {
         $record->indexingStatus = ArchiveOrgBackups::INDEXING_FAILED;
         $record->lastError = $message;
+        $record->nextSubmissionAt = Db::prepareDateForDb(
+            ArchiveOrgBackups::plugin()->getScheduling()->getRetrySubmissionAt()
+        );
         $record->save(false);
 
         $this->addAttempt(
@@ -335,11 +354,12 @@ final class TargetService extends Component
                 'lastSubmissionLabel' => $row->lastSubmittedAt
                     ? Craft::$app->getFormatter()->asDatetime($row->lastSubmittedAt)
                     : null,
-                'lastSnapshotUrl' => $row->lastSnapshotUrl ?: $row->url,
+                'lastSnapshotUrl' => $row->lastSnapshotUrl,
                 'nextSubmissionLabel' => $row->nextSubmissionAt
                     ? Craft::$app->getFormatter()->asDatetime($row->nextSubmissionAt)
                     : null,
                 'statusLabel' => $this->statusLabel($row),
+                'hasSnapshotUrl' => $row->lastSnapshotUrl !== null && $row->lastSnapshotUrl !== '',
                 'isIndexed' => $row->indexingStatus === ArchiveOrgBackups::INDEXING_INDEXED,
             ];
         }
@@ -347,10 +367,15 @@ final class TargetService extends Component
         $notice = '';
 
         if ($rows === []) {
-            $notice = Craft::t(
-                ArchiveOrgBackups::TRANSLATION_CATEGORY,
-                'Enable at least one entry section to start tracking archive targets.'
-            );
+            $notice = ArchiveOrgBackups::plugin()->getManifest()->getEnabledSectionIds() === []
+                ? Craft::t(
+                    ArchiveOrgBackups::TRANSLATION_CATEGORY,
+                    'Enable at least one entry section to start tracking archive targets.'
+                )
+                : Craft::t(
+                    ArchiveOrgBackups::TRANSLATION_CATEGORY,
+                    'Archive targets are being discovered. If this does not change, run the queue worker.'
+                );
         } elseif (ArchiveOrgBackups::plugin()->getQuota()->isQuotaExhausted()) {
             $notice = Craft::t(
                 ArchiveOrgBackups::TRANSLATION_CATEGORY,
@@ -396,7 +421,8 @@ final class TargetService extends Component
                     $record->lastSubmittedAt,
                     $record->lastSubmittedSourceDateUpdated,
                     $record->sourceDateUpdated,
-                    ArchiveOrgBackups::plugin()->getScheduling()->getUnchangedRefreshDays()
+                    ArchiveOrgBackups::plugin()->getScheduling()->getUnchangedRefreshDays(),
+                    ArchiveOrgBackups::plugin()->getScheduling()->getChangedTargetWindowHours()
                 )
             );
         }
@@ -409,6 +435,27 @@ final class TargetService extends Component
         $record->isActive = false;
         $record->nextSubmissionAt = null;
         $record->save(false);
+    }
+
+    public function markSubmissionPollingFailed(ArchiveTargetRecord $record, string $message): void
+    {
+        $record->lastJobStatus = ArchiveOrgBackups::JOB_STATUS_FAILED;
+        $record->indexingStatus = ArchiveOrgBackups::INDEXING_FAILED;
+        $record->lastError = $message;
+        $record->nextSubmissionAt = Db::prepareDateForDb(
+            ArchiveOrgBackups::plugin()->getScheduling()->getRetrySubmissionAt()
+        );
+        $record->save(false);
+
+        $this->addAttempt(
+            (int) $record->id,
+            'status_poll',
+            'failed',
+            $message,
+            null,
+            null,
+            null
+        );
     }
 
     private function rowKey(int $siteId, string $url): string
@@ -432,6 +479,10 @@ final class TargetService extends Component
 
         if ($row->lastJobStatus === ArchiveOrgBackups::JOB_STATUS_QUOTA_EXHAUSTED) {
             return Craft::t(ArchiveOrgBackups::TRANSLATION_CATEGORY, 'Daily limit reached');
+        }
+
+        if ($row->lastJobStatus === ArchiveOrgBackups::JOB_STATUS_RETRY) {
+            return Craft::t(ArchiveOrgBackups::TRANSLATION_CATEGORY, 'Retry scheduled');
         }
 
         if ($row->lastJobStatus === ArchiveOrgBackups::JOB_STATUS_FAILED) {

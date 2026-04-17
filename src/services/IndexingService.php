@@ -74,9 +74,8 @@ final class IndexingService extends Component
         }
 
         if ($attempt >= self::MAX_STATUS_POLL_ATTEMPTS) {
-            ArchiveOrgBackups::plugin()->getTargets()->updateStatusPoll(
+            ArchiveOrgBackups::plugin()->getTargets()->markSubmissionPollingFailed(
                 $target,
-                'failed',
                 'Maximum Archive.org save-status polling attempts reached.'
             );
 
@@ -89,11 +88,7 @@ final class IndexingService extends Component
             $this->scheduleStatusPoll($targetId, $attempt + 1, $attempt + 1);
             return;
         } catch (ArchiveOrgException $exception) {
-            ArchiveOrgBackups::plugin()->getTargets()->updateStatusPoll(
-                $target,
-                'failed',
-                $exception->getMessage()
-            );
+            ArchiveOrgBackups::plugin()->getTargets()->markSubmissionPollingFailed($target, $exception->getMessage());
             return;
         }
 
@@ -143,13 +138,7 @@ final class IndexingService extends Component
 
             return false;
         } catch (ArchiveOrgException $exception) {
-            ArchiveOrgBackups::plugin()->getTargets()->updateIndexingResult(
-                $target,
-                false,
-                null,
-                null,
-                $exception->getMessage()
-            );
+            ArchiveOrgBackups::plugin()->getTargets()->markIndexingFailed($target, $exception->getMessage());
 
             return false;
         }

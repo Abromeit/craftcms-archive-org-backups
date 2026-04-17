@@ -9,16 +9,16 @@ use craft\base\Model;
 use craft\base\Plugin;
 use craft\console\Application as ConsoleApplication;
 use craft\events\ElementEvent;
-use craft\events\PluginEvent;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\events\RegisterUrlRulesEvent;
 use craft\helpers\UrlHelper;
 use craft\helpers\ElementHelper;
 use craft\services\Elements;
-use craft\services\Plugins;
 use craft\web\UrlManager;
 use craft\web\View;
 use yii\base\Event;
+use abromeit\archiveorgbackups\jobs\SubmitDueTargetsJob;
+use abromeit\archiveorgbackups\jobs\SyncTargetsJob;
 use abromeit\archiveorgbackups\models\Settings;
 use abromeit\archiveorgbackups\services\DashboardService;
 use abromeit\archiveorgbackups\services\HeartbeatService;
@@ -101,7 +101,6 @@ final class ArchiveOrgBackups extends Plugin
 
         $this->registerTemplateRoots();
         $this->registerRoutes();
-        $this->registerPluginEvents();
         $this->registerElementHooks();
 
         Craft::$app->onInit(function(): void {
@@ -112,7 +111,16 @@ final class ArchiveOrgBackups extends Plugin
     public function afterInstall(): void
     {
         parent::afterInstall();
-        $this->getHeartbeat()->ensureScheduled(true);
+        $this->queueMaintenance();
+    }
+
+    public function afterSaveSettings(): void
+    {
+        parent::afterSaveSettings();
+
+        $this->getTargets()->retireInvalidTargets();
+        $this->getTargets()->primeManifest(100);
+        $this->queueMaintenance();
     }
 
     public function getCpNavItem(): ?array
@@ -233,21 +241,6 @@ final class ArchiveOrgBackups extends Plugin
         );
     }
 
-    private function registerPluginEvents(): void
-    {
-        Event::on(
-            Plugins::class,
-            Plugins::EVENT_AFTER_INSTALL_PLUGIN,
-            function(PluginEvent $event): void {
-                if ($event->plugin->id !== $this->id) {
-                    return;
-                }
-
-                $this->getHeartbeat()->ensureScheduled(true);
-            }
-        );
-    }
-
     private function registerElementHooks(): void
     {
         Event::on(
@@ -277,5 +270,12 @@ final class ArchiveOrgBackups extends Plugin
                 $this->getTargets()->retireEntry($event->element->id);
             }
         );
+    }
+
+    private function queueMaintenance(): void
+    {
+        Craft::$app->getQueue()->push(new SyncTargetsJob());
+        Craft::$app->getQueue()->push(new SubmitDueTargetsJob());
+        $this->getHeartbeat()->ensureScheduled();
     }
 }

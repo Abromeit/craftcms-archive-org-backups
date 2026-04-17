@@ -42,7 +42,8 @@ final class SchedulingService extends Component
         ?string $lastSubmittedAt,
         ?string $lastSubmittedSourceDateUpdated,
         string $sourceDateUpdated,
-        int $unchangedRefreshDays
+        int $unchangedRefreshDays,
+        int $changedResubmitHours
     ): DateTimeImmutable {
         $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
 
@@ -51,7 +52,7 @@ final class SchedulingService extends Component
         }
 
         if (self::isContentChanged($lastSubmittedSourceDateUpdated, $sourceDateUpdated)) {
-            return $now;
+            return $now->modify('+' . $changedResubmitHours . ' hours');
         }
 
         return (new DateTimeImmutable($lastSubmittedAt, new DateTimeZone('UTC')))
@@ -126,6 +127,13 @@ final class SchedulingService extends Component
     public function getChangedTargetWindowHours(): int
     {
         return ArchiveOrgBackups::plugin()->getSettings()->changedResubmitHours;
+    }
+
+    public function getRetrySubmissionAt(?DateTimeImmutable $now = null): DateTimeImmutable
+    {
+        $current = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
+
+        return $current->modify('+' . $this->getChangedTargetWindowHours() . ' hours');
     }
 
     public function getUnchangedRefreshDays(): int

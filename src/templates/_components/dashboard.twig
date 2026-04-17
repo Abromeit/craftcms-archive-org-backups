@@ -37,9 +37,13 @@
                             <td>
                                 {% if row.lastSubmissionLabel %}
                                     <span class="aob-status">
-                                        <a href="{{ row.lastSnapshotUrl }}" target="_blank" rel="noopener">
+                                        {% if row.hasSnapshotUrl %}
+                                            <a href="{{ row.lastSnapshotUrl }}" target="_blank" rel="noopener">
+                                                {{ row.lastSubmissionLabel }}
+                                            </a>
+                                        {% else %}
                                             {{ row.lastSubmissionLabel }}
-                                        </a>
+                                        {% endif %}
                                         {% if row.isIndexed %}
                                             <details class="aob-check">
                                                 <summary aria-label="{{ 'Indexing complete'|t('archive-org-backups') }}">✓</summary>
@@ -67,7 +71,7 @@
             </table>
         {% else %}
             <div class="aob-empty">
-                <p>{{ 'No archive targets are available yet.'|t('archive-org-backups') }}</p>
+                <p>{{ notice ?: 'No archive targets are available yet.'|t('archive-org-backups') }}</p>
             </div>
         {% endif %}
     </div>

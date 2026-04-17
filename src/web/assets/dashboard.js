@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var visibleIds = [];
         var rows = root.querySelectorAll('[data-target-id]');
         var index;
+        var currentUrl = new URL(window.location.href);
 
         for (index = 0; index < rows.length; ++index) {
             visibleIds.push(rows[index].getAttribute('data-target-id'));
@@ -24,6 +25,14 @@ document.addEventListener('DOMContentLoaded', function() {
         var url = new URL(endpoint, window.location.origin);
 
         url.searchParams.set('viewerToken', viewerToken);
+
+        if (currentUrl.searchParams.has('sort')) {
+            url.searchParams.set('sort', currentUrl.searchParams.get('sort'));
+        }
+
+        if (currentUrl.searchParams.has('dir')) {
+            url.searchParams.set('dir', currentUrl.searchParams.get('dir'));
+        }
 
         if (visibleIds.length > 0) {
             url.searchParams.set('visibleTargetIds', visibleIds.join(','));
