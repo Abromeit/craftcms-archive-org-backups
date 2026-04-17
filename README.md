@@ -65,6 +65,33 @@ Open `Settings -> Plugins -> Archive.org Backups` and configure:
 
 Only selected entry sections are tracked in v1.
 
+### `.env` endpoint overrides
+
+For local testing, the remote Archive.org hostnames can be overridden from your Craft
+`.env` file.
+
+Use one global override for all requests:
+
+```dotenv
+ARCHIVEORG_BACKUPS_BASE_URL="http://127.0.0.1:8080"
+```
+
+Or override individual endpoint bases:
+
+```dotenv
+ARCHIVEORG_BACKUPS_SAVE_BASE_URL="http://127.0.0.1:8080"
+ARCHIVEORG_BACKUPS_SAVE_STATUS_BASE_URL="http://127.0.0.1:8080"
+ARCHIVEORG_BACKUPS_AVAILABILITY_BASE_URL="http://127.0.0.1:8080"
+ARCHIVEORG_BACKUPS_CDX_BASE_URL="http://127.0.0.1:8080"
+```
+
+Defaults:
+
+- `ARCHIVEORG_BACKUPS_SAVE_BASE_URL` -> `https://web.archive.org`
+- `ARCHIVEORG_BACKUPS_SAVE_STATUS_BASE_URL` -> `https://web-wp.archive.org`
+- `ARCHIVEORG_BACKUPS_AVAILABILITY_BASE_URL` -> `https://archive.org`
+- `ARCHIVEORG_BACKUPS_CDX_BASE_URL` -> `https://web.archive.org`
+
 ## Queue Execution
 
 The plugin works with Craft's default HTTP queue runner, so it can operate without cron.

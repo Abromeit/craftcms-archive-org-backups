@@ -34,7 +34,7 @@ final class PublicArchiveOrgClient implements ArchiveOrgClientInterface
     public function submitUrl(string $url): array
     {
         try {
-            $response = $this->client->post('https://web.archive.org/save/', [
+            $response = $this->client->post(ArchiveOrgEndpoints::saveUrl(), [
                 RequestOptions::FORM_PARAMS => ['url' => rtrim($url, '/')],
                 RequestOptions::HEADERS => [
                     'Accept' => 'text/html,application/xhtml+xml',
@@ -65,7 +65,7 @@ final class PublicArchiveOrgClient implements ArchiveOrgClientInterface
 
     public function getSaveStatus(string $jobId): array
     {
-        $payload = $this->requestJson('https://web-wp.archive.org/save/status/' . rawurlencode($jobId));
+        $payload = $this->requestJson(ArchiveOrgEndpoints::saveStatusUrl($jobId));
         $status = isset($payload['status']) ? (string) $payload['status'] : '';
 
         if ($status === '') {
@@ -81,7 +81,7 @@ final class PublicArchiveOrgClient implements ArchiveOrgClientInterface
 
     public function getAvailabilitySnapshot(string $url): ?array
     {
-        $payload = $this->requestJson('https://archive.org/wayback/available/?url=' . rawurlencode($url));
+        $payload = $this->requestJson(ArchiveOrgEndpoints::availabilityUrl($url));
 
         return ArchiveOrgParser::extractAvailabilitySnapshot($payload);
     }
@@ -97,9 +97,7 @@ final class PublicArchiveOrgClient implements ArchiveOrgClientInterface
             'from' => (new DateTimeImmutable('-1 year', Craft::$app->getTimeZone()))->format('Y'),
         ];
 
-        $payload = $this->requestJson(
-            'https://web.archive.org/cdx/search/cdx?' . http_build_query($query)
-        );
+        $payload = $this->requestJson(ArchiveOrgEndpoints::cdxUrl($query));
 
         if (!is_array($payload)) {
             throw new InvalidArchiveOrgResponseException('Archive.org CDX payload is invalid.');
