@@ -50,13 +50,17 @@ final class DashboardService extends Component
             [
                 'label' => Craft::t(ArchiveOrgBackups::TRANSLATION_CATEGORY, 'Status'),
                 'url' => UrlHelper::cpUrl(ArchiveOrgBackups::HANDLE),
+                'isSorted' => false,
+                'direction' => null,
             ],
         ];
     }
 
     private function buildColumn(string $column, string $label, string $sort, string $dir): array
     {
-        $nextDir = $sort === $column && strtolower($dir) === 'asc' ? 'desc' : 'asc';
+        $direction = strtolower($dir) === 'desc' ? 'desc' : 'asc';
+        $isSorted = $sort === $column;
+        $nextDir = $isSorted && $direction === 'asc' ? 'desc' : 'asc';
 
         return [
             'label' => $label,
@@ -64,6 +68,8 @@ final class DashboardService extends Component
                 'sort' => $column,
                 'dir' => $nextDir,
             ]),
+            'isSorted' => $isSorted,
+            'direction' => $isSorted ? $direction : null,
         ];
     }
 }

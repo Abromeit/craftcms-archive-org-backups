@@ -25,7 +25,17 @@
                     <tr>
                         {% for column in columns %}
                             <th scope="col">
-                                <a href="{{ column.url }}">{{ column.label }}</a>
+                                <a class="aob-sort" href="{{ column.url }}">
+                                    <span>{{ column.label }}</span>
+                                    {% if column.isSorted %}
+                                        <span
+                                            class="aob-sort__indicator"
+                                            aria-label="{{ column.direction == 'asc' ? 'Sorted ascending'|t('archive-org-backups') : 'Sorted descending'|t('archive-org-backups') }}"
+                                        >
+                                            {{ column.direction == 'asc' ? '↑' : '↓' }}
+                                        </span>
+                                    {% endif %}
+                                </a>
                             </th>
                         {% endfor %}
                     </tr>

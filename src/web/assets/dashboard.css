@@ -64,6 +64,19 @@
     text-decoration: none;
 }
 
+.aob-sort {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.aob-sort__indicator {
+    color: #356859;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+}
+
 .aob-status {
     display: inline-flex;
     align-items: center;
