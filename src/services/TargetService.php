@@ -343,9 +343,15 @@ final class TargetService extends Component
         $allowedSorts = ['url', 'lastSubmittedAt', 'nextSubmissionAt'];
         $sort = in_array($sort, $allowedSorts, true) ? $sort : 'nextSubmissionAt';
         $dir = strtolower($dir) === 'desc' ? SORT_DESC : SORT_ASC;
+        $orderBy = [$sort => $dir];
+
+        if ($sort !== 'url') {
+            $orderBy['url'] = SORT_ASC;
+        }
+
         $rows = ArchiveTargetRecord::find()
             ->where(['isActive' => true])
-            ->orderBy([$sort => $dir, 'url' => SORT_ASC])
+            ->orderBy($orderBy)
             ->all();
         $result = [];
 
