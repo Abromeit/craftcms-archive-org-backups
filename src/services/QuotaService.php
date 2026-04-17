@@ -58,7 +58,7 @@ final class QuotaService extends Component
     {
         $until = Craft::$app->getCache()->get(self::CACHE_KEY);
 
-        if (is_string($until) && strtotime($until) > time()) {
+        if (is_int($until) && $until > time()) {
             return true;
         }
 
@@ -70,7 +70,7 @@ final class QuotaService extends Component
         $resetAt = ArchiveOrgBackups::plugin()->getScheduling()->getQuotaResetAt();
         $ttl = max(60, $resetAt->getTimestamp() - time());
 
-        Craft::$app->getCache()->set(self::CACHE_KEY, Db::prepareDateForDb($resetAt), $ttl);
+        Craft::$app->getCache()->set(self::CACHE_KEY, $resetAt->getTimestamp(), $ttl);
 
         if ($observedLimit !== null) {
             ArchiveOrgBackups::plugin()->getTargets()->addAttempt(

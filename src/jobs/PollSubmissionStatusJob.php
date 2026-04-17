@@ -13,9 +13,15 @@ final class PollSubmissionStatusJob extends BaseJob
 
     public int $attempt = 0;
 
+    public string $expectedJobId;
+
     public function execute($queue): void
     {
-        ArchiveOrgBackups::plugin()->getIndexing()->pollSubmissionStatus($this->targetId, $this->attempt);
+        ArchiveOrgBackups::plugin()->getIndexing()->pollSubmissionStatus(
+            $this->targetId,
+            $this->attempt,
+            $this->expectedJobId
+        );
     }
 
     protected function defaultDescription(): ?string

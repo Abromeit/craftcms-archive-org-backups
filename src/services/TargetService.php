@@ -136,7 +136,7 @@ final class TargetService extends Component
 
     /**
      * @param int[] $ids
-     * @return array<int, array{id:int, lastRemoteCheckAt:?string}>
+     * @return array<int, array{id:int, lastJobId:?string, lastRemoteCheckAt:?string}>
      */
     public function getPendingLiveCandidates(array $ids): array
     {
@@ -144,9 +144,9 @@ final class TargetService extends Component
             return [];
         }
 
-        /** @var array<int, array{id:int, lastRemoteCheckAt:?string}> $rows */
+        /** @var array<int, array{id:int, lastJobId:?string, lastRemoteCheckAt:?string}> $rows */
         $rows = (new Query())
-            ->select(['id', 'lastRemoteCheckAt'])
+            ->select(['id', 'lastJobId', 'lastRemoteCheckAt'])
             ->from(ArchiveTargetRecord::tableName())
             ->where(['id' => $ids, 'isActive' => true])
             ->andWhere(['indexingStatus' => ArchiveOrgBackups::INDEXING_PENDING])
@@ -473,16 +473,8 @@ final class TargetService extends Component
 
     private function statusLabel(ArchiveTargetRecord $row): string
     {
-        if ($row->indexingStatus === ArchiveOrgBackups::INDEXING_INDEXED) {
-            return Craft::t(ArchiveOrgBackups::TRANSLATION_CATEGORY, 'Indexed');
-        }
-
         if ($row->lastJobStatus === ArchiveOrgBackups::JOB_STATUS_PENDING) {
             return Craft::t(ArchiveOrgBackups::TRANSLATION_CATEGORY, 'Submitting');
-        }
-
-        if ($row->indexingStatus === ArchiveOrgBackups::INDEXING_PENDING) {
-            return Craft::t(ArchiveOrgBackups::TRANSLATION_CATEGORY, 'Awaiting indexing');
         }
 
         if ($row->lastJobStatus === ArchiveOrgBackups::JOB_STATUS_QUOTA_EXHAUSTED) {
@@ -495,6 +487,18 @@ final class TargetService extends Component
 
         if ($row->lastJobStatus === ArchiveOrgBackups::JOB_STATUS_FAILED) {
             return Craft::t(ArchiveOrgBackups::TRANSLATION_CATEGORY, 'Error');
+        }
+
+        if ($row->indexingStatus === ArchiveOrgBackups::INDEXING_FAILED) {
+            return Craft::t(ArchiveOrgBackups::TRANSLATION_CATEGORY, 'Indexing failed');
+        }
+
+        if ($row->indexingStatus === ArchiveOrgBackups::INDEXING_INDEXED) {
+            return Craft::t(ArchiveOrgBackups::TRANSLATION_CATEGORY, 'Indexed');
+        }
+
+        if ($row->indexingStatus === ArchiveOrgBackups::INDEXING_PENDING) {
+            return Craft::t(ArchiveOrgBackups::TRANSLATION_CATEGORY, 'Awaiting indexing');
         }
 
         return Craft::t(ArchiveOrgBackups::TRANSLATION_CATEGORY, 'Awaiting submission');

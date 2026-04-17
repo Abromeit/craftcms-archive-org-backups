@@ -119,6 +119,7 @@ final class SubmissionService extends Component
             ->push(new PollSubmissionStatusJob([
                 'targetId' => (int) $target->id,
                 'attempt' => 0,
+                'expectedJobId' => $result['jobId'],
             ]));
 
         return true;

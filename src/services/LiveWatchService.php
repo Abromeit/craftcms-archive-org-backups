@@ -58,7 +58,12 @@ final class LiveWatchService extends Component
             }
 
             Craft::$app->getCache()->set(self::BUDGET_CACHE_KEY, time(), 120);
-            ArchiveOrgBackups::plugin()->getIndexing()->confirmIndexing((int) $candidate['id'], 0, true);
+            ArchiveOrgBackups::plugin()->getIndexing()->confirmIndexing(
+                (int) $candidate['id'],
+                0,
+                true,
+                $candidate['lastJobId'] ?? null
+            );
         } finally {
             $mutex->release($lockName);
         }

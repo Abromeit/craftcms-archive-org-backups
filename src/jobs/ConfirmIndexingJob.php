@@ -13,9 +13,16 @@ final class ConfirmIndexingJob extends BaseJob
 
     public int $attempt = 0;
 
+    public string $expectedJobId;
+
     public function execute($queue): void
     {
-        ArchiveOrgBackups::plugin()->getIndexing()->confirmIndexing($this->targetId, $this->attempt, false);
+        ArchiveOrgBackups::plugin()->getIndexing()->confirmIndexing(
+            $this->targetId,
+            $this->attempt,
+            false,
+            $this->expectedJobId
+        );
     }
 
     protected function defaultDescription(): ?string

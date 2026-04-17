@@ -51,11 +51,18 @@ final class HeartbeatService extends Component
         }
 
         try {
+            $cache = Craft::$app->getCache();
+            $scheduledUntil = (int) ($cache->get(self::CACHE_KEY) ?: 0);
+
+            if ($scheduledUntil > (time() + 30)) {
+                return;
+            }
+
             Craft::$app->getQueue()->push(new SyncTargetsJob());
             Craft::$app->getQueue()->push(new SubmitDueTargetsJob());
 
             $interval = max(60, ArchiveOrgBackups::plugin()->getSettings()->heartbeatIntervalMinutes * 60);
-            Craft::$app->getCache()->set(self::CACHE_KEY, time() + $interval, $interval * 2);
+            $cache->set(self::CACHE_KEY, time() + $interval, $interval * 2);
             Craft::$app->getQueue()->delay($interval)->push(new HeartbeatJob());
         } finally {
             $mutex->release(self::LOCK_KEY);

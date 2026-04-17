@@ -65,11 +65,15 @@ final class IndexingService extends Component
         $this->client = new PublicArchiveOrgClient();
     }
 
-    public function pollSubmissionStatus(int $targetId, int $attempt): void
+    public function pollSubmissionStatus(int $targetId, int $attempt, ?string $expectedJobId = null): void
     {
         $target = ArchiveOrgBackups::plugin()->getTargets()->getTargetById($targetId);
 
         if (!$target instanceof ArchiveTargetRecord || $target->lastJobId === null) {
+            return;
+        }
+
+        if ($expectedJobId !== null && $target->lastJobId !== $expectedJobId) {
             return;
         }
 
@@ -85,7 +89,7 @@ final class IndexingService extends Component
         try {
             $status = $this->client->getSaveStatus($target->lastJobId);
         } catch (TemporaryArchiveOrgException) {
-            $this->scheduleStatusPoll($targetId, $attempt + 1, $attempt + 1);
+            $this->scheduleStatusPoll($targetId, $attempt + 1, $attempt + 1, $target->lastJobId);
             return;
         } catch (ArchiveOrgException $exception) {
             ArchiveOrgBackups::plugin()->getTargets()->markSubmissionPollingFailed($target, $exception->getMessage());
@@ -99,7 +103,7 @@ final class IndexingService extends Component
                 $status['message'],
                 $status['statusExt']
             );
-            $this->scheduleStatusPoll($targetId, $attempt + 1, $attempt + 1);
+            $this->scheduleStatusPoll($targetId, $attempt + 1, $attempt + 1, $target->lastJobId);
             return;
         }
 
@@ -117,14 +121,23 @@ final class IndexingService extends Component
             $status['statusExt']
         );
 
-        $this->scheduleConfirmation($targetId, 0);
+        $this->scheduleConfirmation($targetId, 0, $target->lastJobId);
     }
 
-    public function confirmIndexing(int $targetId, int $attempt, bool $liveWatch = false): bool
+    public function confirmIndexing(
+        int $targetId,
+        int $attempt,
+        bool $liveWatch = false,
+        ?string $expectedJobId = null
+    ): bool
     {
         $target = ArchiveOrgBackups::plugin()->getTargets()->getTargetById($targetId);
 
         if (!$target instanceof ArchiveTargetRecord || $target->lastSubmittedAt === null) {
+            return false;
+        }
+
+        if ($expectedJobId !== null && $target->lastJobId !== $expectedJobId) {
             return false;
         }
 
@@ -142,7 +155,7 @@ final class IndexingService extends Component
             $cdx = $this->client->getLatestCdxCapture($target->url);
         } catch (TemporaryArchiveOrgException) {
             if (!$liveWatch) {
-                $this->scheduleConfirmation($targetId, $attempt + 1);
+                $this->scheduleConfirmation($targetId, $attempt + 1, $target->lastJobId);
             }
 
             return false;
@@ -170,29 +183,31 @@ final class IndexingService extends Component
         );
 
         if (!$indexed && !$liveWatch) {
-            $this->scheduleConfirmation($targetId, $attempt + 1);
+            $this->scheduleConfirmation($targetId, $attempt + 1, $target->lastJobId);
         }
 
         return $indexed;
     }
 
-    public function scheduleStatusPoll(int $targetId, int $attempt, int $delayAttempt): void
+    public function scheduleStatusPoll(int $targetId, int $attempt, int $delayAttempt, string $expectedJobId): void
     {
         Craft::$app->getQueue()
             ->delay(ArchiveOrgBackups::plugin()->getScheduling()->getStatusPollDelay($delayAttempt))
             ->push(new \abromeit\archiveorgbackups\jobs\PollSubmissionStatusJob([
                 'targetId' => $targetId,
                 'attempt' => $attempt,
+                'expectedJobId' => $expectedJobId,
             ]));
     }
 
-    public function scheduleConfirmation(int $targetId, int $attempt): void
+    public function scheduleConfirmation(int $targetId, int $attempt, string $expectedJobId): void
     {
         Craft::$app->getQueue()
             ->delay(ArchiveOrgBackups::plugin()->getScheduling()->getConfirmationDelay($attempt))
             ->push(new ConfirmIndexingJob([
                 'targetId' => $targetId,
                 'attempt' => $attempt,
+                'expectedJobId' => $expectedJobId,
             ]));
     }
 }
