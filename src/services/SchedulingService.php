@@ -113,7 +113,7 @@ final class SchedulingService extends Component
 
     public function getQuotaResetAt(?DateTimeImmutable $now = null): DateTimeImmutable
     {
-        $timezone = Craft::$app->getTimeZone();
+        $timezone = new DateTimeZone(Craft::$app->getTimeZone());
         $current = $now ?? new DateTimeImmutable('now', $timezone);
 
         return $current

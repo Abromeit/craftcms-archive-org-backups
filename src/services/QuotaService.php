@@ -87,7 +87,7 @@ final class QuotaService extends Component
 
     public function getProgressData(): array
     {
-        $now = new DateTimeImmutable('now', Craft::$app->getTimeZone());
+        $now = new DateTimeImmutable('now', new DateTimeZone(Craft::$app->getTimeZone()));
         $used = $this->getDailyUsage($now);
         $limit = $this->getDailyLimit();
 
@@ -103,7 +103,7 @@ final class QuotaService extends Component
      */
     private function getWindow(?DateTimeImmutable $now = null): array
     {
-        $timezone = Craft::$app->getTimeZone();
+        $timezone = new DateTimeZone(Craft::$app->getTimeZone());
         $current = $now ?? new DateTimeImmutable('now', $timezone);
         $start = $current->setTimezone($timezone)->setTime(0, 0)->setTimezone(new DateTimeZone('UTC'));
         $end = $start->modify('+1 day');

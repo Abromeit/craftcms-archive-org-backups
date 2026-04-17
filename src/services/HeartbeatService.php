@@ -15,14 +15,15 @@ final class HeartbeatService extends Component
 {
     private const CACHE_KEY = 'archive-org-backups:heartbeat-scheduled';
 
+    private const LOCK_KEY = 'archive-org-backups:heartbeat-schedule';
+
     public function ensureScheduled(bool $force = false): void
     {
         $interval = max(60, ArchiveOrgBackups::plugin()->getSettings()->heartbeatIntervalMinutes * 60);
         $cache = Craft::$app->getCache();
         $mutex = Craft::$app->getMutex();
-        $lockName = 'archive-org-backups:heartbeat-schedule';
 
-        if (!$mutex->acquire($lockName, 0)) {
+        if (!$mutex->acquire(self::LOCK_KEY, 0)) {
             return;
         }
 
@@ -34,18 +35,30 @@ final class HeartbeatService extends Component
             }
 
             $delay = $force ? 0 : $interval;
-            $cache->set(self::CACHE_KEY, time() + ($interval * 2), $interval * 2);
+            $cache->set(self::CACHE_KEY, time() + $interval, $interval * 2);
             Craft::$app->getQueue()->delay($delay)->push(new HeartbeatJob());
         } finally {
-            $mutex->release($lockName);
+            $mutex->release(self::LOCK_KEY);
         }
     }
 
     public function runMaintenance(): void
     {
-        Craft::$app->getQueue()->push(new SyncTargetsJob());
-        Craft::$app->getQueue()->push(new SubmitDueTargetsJob());
-        Craft::$app->getCache()->delete(self::CACHE_KEY);
-        $this->ensureScheduled();
+        $mutex = Craft::$app->getMutex();
+
+        if (!$mutex->acquire(self::LOCK_KEY, 0)) {
+            return;
+        }
+
+        try {
+            Craft::$app->getQueue()->push(new SyncTargetsJob());
+            Craft::$app->getQueue()->push(new SubmitDueTargetsJob());
+
+            $interval = max(60, ArchiveOrgBackups::plugin()->getSettings()->heartbeatIntervalMinutes * 60);
+            Craft::$app->getCache()->set(self::CACHE_KEY, time() + $interval, $interval * 2);
+            Craft::$app->getQueue()->delay($interval)->push(new HeartbeatJob());
+        } finally {
+            $mutex->release(self::LOCK_KEY);
+        }
     }
 }

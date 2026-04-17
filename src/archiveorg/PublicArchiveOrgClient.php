@@ -6,6 +6,7 @@ namespace abromeit\archiveorgbackups\archiveorg;
 
 use Craft;
 use DateTimeImmutable;
+use DateTimeZone;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\RequestOptions;
@@ -94,7 +95,8 @@ final class PublicArchiveOrgClient implements ArchiveOrgClientInterface
             'filter' => 'statuscode:200',
             'output' => 'json',
             'fl' => 'timestamp,original',
-            'from' => (new DateTimeImmutable('-1 year', Craft::$app->getTimeZone()))->format('Y'),
+            'from' => (new DateTimeImmutable('-1 year', new DateTimeZone(Craft::$app->getTimeZone())))
+                ->format('Y'),
         ];
 
         $payload = $this->requestJson(ArchiveOrgEndpoints::cdxUrl($query));
