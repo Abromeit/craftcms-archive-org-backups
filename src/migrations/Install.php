@@ -16,6 +16,7 @@ final class Install extends Migration
                 'elementId' => $this->integer()->notNull(),
                 'siteId' => $this->integer()->notNull(),
                 'url' => $this->text()->notNull(),
+                'urlHash' => $this->char(32)->notNull(),
                 'isActive' => $this->boolean()->notNull()->defaultValue(true),
                 'sourceDateUpdated' => $this->dateTime()->notNull(),
                 'lastSubmittedAt' => $this->dateTime(),
@@ -38,7 +39,7 @@ final class Install extends Migration
             $this->createIndex(
                 null,
                 '{{%archiveorgbackups_targets}}',
-                ['elementId', 'siteId', 'url'],
+                ['elementId', 'siteId', 'urlHash'],
                 true
             );
             $this->createIndex(

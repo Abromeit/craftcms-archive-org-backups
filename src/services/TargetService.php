@@ -406,7 +406,7 @@ final class TargetService extends Component
         $record = ArchiveTargetRecord::findOne([
             'elementId' => $data['elementId'],
             'siteId' => $data['siteId'],
-            'url' => $data['url'],
+            'urlHash' => ArchiveTargetRecord::hashUrl((string) $data['url']),
         ]);
 
         if (!$record instanceof ArchiveTargetRecord) {
