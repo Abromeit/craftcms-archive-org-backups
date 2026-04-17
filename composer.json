@@ -1,0 +1,23 @@
+{
+    "name": "abromeit/craftcms-archive-org-backups",
+    "description": "A CraftCMS plugin to regularly back up your website to archive.org",
+    "authors": [
+        {
+            "name": "Daniel Abromeit",
+            "email": "d.abromeit@koch-essen.de",
+            "homepage": "https://daniel-abromeit.de/",
+            "role": "Developer"
+        }
+    ],
+    "keywords": [
+        "archive.org",
+        "archive",
+        "backup",
+        "craftcms",
+        "extension",
+        "internet archive",
+        "plugin",
+        "wayback machine"
+    ],
+    "license": "MIT"
+}
