@@ -18,6 +18,8 @@ use abromeit\archiveorgbackups\records\ArchiveTargetRecord;
 
 final class SubmissionService extends Component
 {
+    private const LOCK_KEY = 'archive-org-backups:submit-due-targets';
+
     private ArchiveOrgClientInterface $client;
 
     public function init(): void
@@ -27,6 +29,21 @@ final class SubmissionService extends Component
     }
 
     public function processDueTargets(): int
+    {
+        $mutex = Craft::$app->getMutex();
+
+        if (!$mutex->acquire(self::LOCK_KEY, 0)) {
+            return 0;
+        }
+
+        try {
+            return $this->processDueTargetsInternal();
+        } finally {
+            $mutex->release(self::LOCK_KEY);
+        }
+    }
+
+    private function processDueTargetsInternal(): int
     {
         $quota = ArchiveOrgBackups::plugin()->getQuota();
 

@@ -49,7 +49,7 @@ final class DashboardController extends Controller
             ArchiveOrgBackups::plugin()->getLiveWatch()->registerHeartbeat($viewerToken);
         }
 
-        ArchiveOrgBackups::plugin()->getLiveWatch()->tick($visibleIds);
+        ArchiveOrgBackups::plugin()->getLiveWatch()->tick($viewerToken, $visibleIds);
 
         return $this->asJson([
             'dashboardHtml' => ArchiveOrgBackups::plugin()->getDashboard()->renderDashboardHtml($sort, $dir),

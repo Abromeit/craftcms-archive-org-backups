@@ -13,6 +13,7 @@ final class DashboardService extends Component
 {
     public function getDashboardData(string $sort = 'nextSubmissionAt', string $dir = 'asc'): array
     {
+        [$sort, $dir] = $this->normalizeSort($sort, $dir);
         $rowData = ArchiveOrgBackups::plugin()->getTargets()->getDashboardRows($sort, $dir);
 
         return [
@@ -25,6 +26,8 @@ final class DashboardService extends Component
 
     public function renderDashboardHtml(string $sort = 'nextSubmissionAt', string $dir = 'asc'): string
     {
+        [$sort, $dir] = $this->normalizeSort($sort, $dir);
+
         return Craft::$app->getView()->renderTemplate(
             ArchiveOrgBackups::HANDLE . '/_components/dashboard',
             $this->getDashboardData($sort, $dir)
@@ -71,5 +74,21 @@ final class DashboardService extends Component
             'isSorted' => $isSorted,
             'direction' => $isSorted ? $direction : null,
         ];
+    }
+
+    /**
+     * @return array{0:string, 1:string}
+     */
+    private function normalizeSort(string $sort, string $dir): array
+    {
+        $allowedSorts = ['url', 'lastSubmittedAt', 'nextSubmissionAt'];
+
+        if (!in_array($sort, $allowedSorts, true)) {
+            $sort = 'nextSubmissionAt';
+        }
+
+        $dir = strtolower($dir) === 'desc' ? 'desc' : 'asc';
+
+        return [$sort, $dir];
     }
 }

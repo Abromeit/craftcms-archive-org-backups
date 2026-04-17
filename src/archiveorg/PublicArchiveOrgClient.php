@@ -37,7 +37,7 @@ final class PublicArchiveOrgClient implements ArchiveOrgClientInterface
     {
         try {
             $response = $this->client->post(ArchiveOrgEndpoints::saveUrl(), [
-                RequestOptions::FORM_PARAMS => ['url' => rtrim($url, '/')],
+                RequestOptions::FORM_PARAMS => ['url' => $url],
                 RequestOptions::HEADERS => [
                     'Accept' => 'text/html,application/xhtml+xml',
                 ],

@@ -12,10 +12,12 @@ final class LiveWatchService extends Component
 {
     private const BUDGET_CACHE_KEY = 'archive-org-backups:live-watch:last-remote-check';
 
+    private const VIEWER_CACHE_PREFIX = 'archive-org-backups:viewer:';
+
     public function registerHeartbeat(string $viewerToken): void
     {
         Craft::$app->getCache()->set(
-            'archive-org-backups:viewer:' . $viewerToken,
+            self::VIEWER_CACHE_PREFIX . $viewerToken,
             time(),
             300
         );
@@ -24,8 +26,12 @@ final class LiveWatchService extends Component
     /**
      * @param int[] $visibleTargetIds
      */
-    public function tick(array $visibleTargetIds): void
+    public function tick(string $viewerToken, array $visibleTargetIds): void
     {
+        if ($viewerToken === '' || !$this->hasActiveViewer($viewerToken)) {
+            return;
+        }
+
         if ($visibleTargetIds === []) {
             return;
         }
@@ -56,5 +62,10 @@ final class LiveWatchService extends Component
         } finally {
             $mutex->release($lockName);
         }
+    }
+
+    private function hasActiveViewer(string $viewerToken): bool
+    {
+        return Craft::$app->getCache()->get(self::VIEWER_CACHE_PREFIX . $viewerToken) !== false;
     }
 }
