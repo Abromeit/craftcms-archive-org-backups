@@ -27,7 +27,7 @@ final class PublicArchiveOrgClient implements ArchiveOrgClientInterface
             RequestOptions::CONNECT_TIMEOUT => 10,
             RequestOptions::HTTP_ERRORS => false,
             RequestOptions::HEADERS => [
-                'User-Agent' => 'Archive.org Backups for Craft CMS',
+                'User-Agent' => 'Archive.org Backups for Craft CMS (+https://github.com/Abromeit/craftcms-archive-org-backups)',
                 'Accept' => 'application/json, text/html;q=0.9',
             ],
         ]);
