@@ -1,0 +1,116 @@
+.aob-dashboard {
+    display: grid;
+    gap: 24px;
+}
+
+.aob-dashboard__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.aob-progress {
+    display: grid;
+    gap: 12px;
+    padding: 20px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 14px;
+    background: linear-gradient(135deg, #f9faf4 0%, #f5f0e7 100%);
+}
+
+.aob-progress__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: space-between;
+}
+
+.aob-meter {
+    width: 100%;
+    height: 14px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.1);
+}
+
+.aob-meter__bar {
+    height: 100%;
+    background: linear-gradient(90deg, #356859 0%, #d97f39 100%);
+}
+
+.aob-table-wrap {
+    overflow-x: auto;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 14px;
+    background: #fff;
+}
+
+.aob-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.aob-table th,
+.aob-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    vertical-align: top;
+    text-align: left;
+}
+
+.aob-table th a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.aob-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.aob-check {
+    position: relative;
+    display: inline-block;
+}
+
+.aob-check summary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    color: #356859;
+    font-weight: 700;
+    list-style: none;
+}
+
+.aob-check summary::-webkit-details-marker {
+    display: none;
+}
+
+.aob-check[open] .aob-check__tip {
+    display: block;
+}
+
+.aob-check__tip {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 20;
+    display: none;
+    width: 220px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #111827;
+    color: #fff;
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.2);
+}
+
+.aob-empty {
+    padding: 32px 20px;
+    text-align: center;
+}

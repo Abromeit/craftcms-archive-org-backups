@@ -1,0 +1,74 @@
+<div class="aob-dashboard">
+    <section class="aob-progress">
+        <div class="aob-progress__meta">
+            <div>
+                <h2>{{ 'Daily Submission Budget'|t('archive-org-backups') }}</h2>
+                <p>{{ progress.used }} / {{ progress.limit }}</p>
+            </div>
+            <div>
+                <strong>{{ progress.percent }}%</strong>
+                <p>{{ progress.windowLabel }}</p>
+            </div>
+        </div>
+        <div class="aob-meter" aria-hidden="true">
+            <div class="aob-meter__bar" style="width: {{ progress.percent }}%;"></div>
+        </div>
+        {% if notice is not empty %}
+            <p>{{ notice }}</p>
+        {% endif %}
+    </section>
+
+    <div class="aob-table-wrap">
+        {% if rows %}
+            <table class="aob-table data fullwidth">
+                <thead>
+                    <tr>
+                        {% for column in columns %}
+                            <th scope="col">
+                                <a href="{{ column.url }}">{{ column.label }}</a>
+                            </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr data-target-id="{{ row.id }}">
+                            <td><a href="{{ row.url }}" target="_blank" rel="noopener">{{ row.url }}</a></td>
+                            <td>
+                                {% if row.lastSubmissionLabel %}
+                                    <span class="aob-status">
+                                        <a href="{{ row.lastSnapshotUrl }}" target="_blank" rel="noopener">
+                                            {{ row.lastSubmissionLabel }}
+                                        </a>
+                                        {% if row.isIndexed %}
+                                            <details class="aob-check">
+                                                <summary aria-label="{{ 'Indexing complete'|t('archive-org-backups') }}">✓</summary>
+                                                <div class="aob-check__tip" role="tooltip">
+                                                    {{ 'Indexing by archive.org is complete for this snapshot.'|t('archive-org-backups') }}
+                                                </div>
+                                            </details>
+                                        {% endif %}
+                                    </span>
+                                {% else %}
+                                    <span class="light">{{ 'Never'|t('archive-org-backups') }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if row.nextSubmissionLabel %}
+                                    {{ row.nextSubmissionLabel }}
+                                {% else %}
+                                    <span class="light">{{ 'Not scheduled'|t('archive-org-backups') }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ row.statusLabel }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="aob-empty">
+                <p>{{ 'No archive targets are available yet.'|t('archive-org-backups') }}</p>
+            </div>
+        {% endif %}
+    </div>
+</div>

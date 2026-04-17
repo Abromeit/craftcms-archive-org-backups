@@ -1,0 +1,19 @@
+{% extends '_layouts/cp' %}
+{% set title = 'Archive.org Backups'|t('archive-org-backups') %}
+{% set selectedSubnavItem = 'dashboard' %}
+{% set fullPageForm = false %}
+{% set headerAction %}
+    <a class="btn settings icon" href="{{ cpUrl('settings/plugins/archive-org-backups') }}">
+        {{ 'Settings'|t('archive-org-backups') }}
+    </a>
+{% endset %}
+
+{% block content %}
+    <div
+        data-aob-dashboard
+        data-refresh-endpoint="{{ cpUrl('archive-org-backups/refresh') }}"
+        data-viewer-token="{{ viewerToken }}"
+    >
+        {% include 'archive-org-backups/_components/dashboard' with dashboard %}
+    </div>
+{% endblock %}

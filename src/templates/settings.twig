@@ -1,0 +1,48 @@
+{% import '_includes/forms.twig' as forms %}
+
+{{ forms.checkboxSelectField({
+    label: 'Entry sections'|t('archive-org-backups'),
+    instructions: 'Choose which entry sections should be archived to archive.org.'|t('archive-org-backups'),
+    id: 'enabledSectionUids',
+    name: 'enabledSectionUids',
+    options: sectionOptions,
+    values: settings.enabledSectionUids
+}) }}
+
+{{ forms.textField({
+    label: 'Public daily limit'|t('archive-org-backups'),
+    instructions: 'Used for scheduling and the progress meter. Remote quota responses still take precedence.'|t('archive-org-backups'),
+    id: 'publicDailyLimit',
+    name: 'publicDailyLimit',
+    value: settings.publicDailyLimit,
+    type: 'number',
+    min: 1
+}) }}
+
+{{ forms.textField({
+    label: 'Changed resubmit window (hours)'|t('archive-org-backups'),
+    id: 'changedResubmitHours',
+    name: 'changedResubmitHours',
+    value: settings.changedResubmitHours,
+    type: 'number',
+    min: 1
+}) }}
+
+{{ forms.textField({
+    label: 'Unchanged refresh interval (days)'|t('archive-org-backups'),
+    id: 'unchangedRefreshDays',
+    name: 'unchangedRefreshDays',
+    value: settings.unchangedRefreshDays,
+    type: 'number',
+    min: 1
+}) }}
+
+{{ forms.textField({
+    label: 'Heartbeat interval (minutes)'|t('archive-org-backups'),
+    instructions: 'Craft will rely on the normal queue runner unless you run a dedicated worker such as `php craft queue/listen --verbose`.'|t('archive-org-backups'),
+    id: 'heartbeatIntervalMinutes',
+    name: 'heartbeatIntervalMinutes',
+    value: settings.heartbeatIntervalMinutes,
+    type: 'number',
+    min: 1
+}) }}

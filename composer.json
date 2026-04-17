@@ -1,6 +1,8 @@
 {
     "name": "abromeit/craftcms-archive-org-backups",
     "description": "A CraftCMS plugin to regularly back up your website to archive.org",
+    "type": "craft-plugin",
+    "license": "MIT",
     "authors": [
         {
             "name": "Daniel Abromeit",
@@ -19,5 +21,32 @@
         "plugin",
         "wayback machine"
     ],
-    "license": "MIT"
+    "autoload": {
+        "psr-4": {
+            "abromeit\\archiveorgbackups\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "abromeit\\archiveorgbackups\\tests\\": "tests/"
+        }
+    },
+    "require": {
+        "php": "^8.2",
+        "craftcms/cms": "^5.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5"
+    },
+    "extra": {
+        "name": "Archive.org Backups",
+        "handle": "archive-org-backups",
+        "class": "abromeit\\archiveorgbackups\\ArchiveOrgBackups",
+        "description": "Submit Craft entry URLs to archive.org and track archive/indexing status.",
+        "developer": "Daniel Abromeit",
+        "developerUrl": "https://daniel-abromeit.de/",
+        "documentationUrl": "https://github.com/abromeit/craftcms-archive-org-backups",
+        "hasCpSection": true,
+        "hasCpSettings": true
+    }
 }

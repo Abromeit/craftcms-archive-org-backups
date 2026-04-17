@@ -1,0 +1,42 @@
+<?php
+
+declare(strict_types=1);
+
+namespace abromeit\archiveorgbackups\tests\Unit;
+
+use PHPUnit\Framework\TestCase;
+use abromeit\archiveorgbackups\ArchiveOrgBackups;
+use abromeit\archiveorgbackups\services\SchedulingService;
+
+final class SchedulingServiceTest extends TestCase
+{
+    public function testNeverSubmittedTargetsReceiveHighestPriority(): void
+    {
+        self::assertSame(
+            ArchiveOrgBackups::PRIORITY_NEVER_SUBMITTED,
+            SchedulingService::calculatePriority(null, '2026-04-17 12:00:00')
+        );
+    }
+
+    public function testChangedTargetsReceiveChangedPriority(): void
+    {
+        self::assertSame(
+            ArchiveOrgBackups::PRIORITY_CHANGED,
+            SchedulingService::calculatePriority('2026-04-16 12:00:00', '2026-04-17 12:00:00')
+        );
+    }
+
+    public function testLiveCandidateSelectionPrefersOldestRemoteCheck(): void
+    {
+        $rows = [
+            ['id' => 4, 'lastRemoteCheckAt' => '2026-04-17 12:10:00'],
+            ['id' => 2, 'lastRemoteCheckAt' => '2026-04-17 12:00:00'],
+            ['id' => 9, 'lastRemoteCheckAt' => null],
+        ];
+
+        self::assertSame(
+            ['id' => 9, 'lastRemoteCheckAt' => null],
+            SchedulingService::selectLiveCandidate($rows)
+        );
+    }
+}

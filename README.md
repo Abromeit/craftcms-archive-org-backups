@@ -1,4 +1,74 @@
-# Archive.org Backups for CraftCMS
+# Archive.org Backups for Craft CMS
+
+Archive.org Backups is a Craft CMS 5 plugin that submits selected entry URLs to the
+Internet Archive Save Page Now service, tracks submission history, and confirms when a
+snapshot becomes visible through Archive.org indexing APIs.
+
+## Features
+
+- Archive selected Craft entry sections to archive.org automatically
+- See all tracked URLs in one control panel screen
+- Monitor last submission time, next submission time, and indexing status
+- Prioritize changed pages while still refreshing unchanged pages on a schedule
+- Stay within the public Save Page Now daily limit
+- Get live dashboard updates while you keep the page open
+
+## Requirements
+
+- PHP 8.2+
+- Craft CMS 5.x
+
+## Installation
+
+Install the package with Composer:
+
+```bash
+composer require abromeit/craftcms-archive-org-backups
+```
+
+Then install the plugin in the Craft control panel or with:
+
+```bash
+php craft plugin/install archive-org-backups
+```
+
+## Configuration
+
+Open `Settings -> Plugins -> Archive.org Backups` and configure:
+
+- `Entry sections`
+- `Public daily limit` (default `150`)
+- `Changed resubmit window (hours)` (default `24`)
+- `Unchanged refresh interval (days)` (default `7`)
+- `Heartbeat interval (minutes)` (default `15`)
+
+Only selected entry sections are tracked in v1.
+
+## Queue Execution
+
+The plugin works with Craft's default HTTP queue runner, so it can operate without cron.
+Timing remains best-effort on low-traffic sites.
+
+For stronger timing guarantees, run a dedicated queue worker:
+
+```bash
+php craft queue/listen --verbose
+```
+
+## Console Commands
+
+```bash
+php craft archive-org-backups/sync-targets
+php craft archive-org-backups/run-maintenance
+```
+
+## Development
+
+Run the unit tests with:
+
+```bash
+vendor/bin/phpunit
+```
 
 ## Copyright
 

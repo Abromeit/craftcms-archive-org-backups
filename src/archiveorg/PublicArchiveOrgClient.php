@@ -1,0 +1,138 @@
+<?php
+
+declare(strict_types=1);
+
+namespace abromeit\archiveorgbackups\archiveorg;
+
+use Craft;
+use DateTimeImmutable;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\RequestOptions;
+use abromeit\archiveorgbackups\archiveorg\exceptions\InvalidArchiveOrgResponseException;
+use abromeit\archiveorgbackups\archiveorg\exceptions\QuotaExhaustedException;
+use abromeit\archiveorgbackups\archiveorg\exceptions\TemporaryArchiveOrgException;
+use abromeit\archiveorgbackups\helpers\ArchiveOrgParser;
+use yii\helpers\Json;
+
+final class PublicArchiveOrgClient implements ArchiveOrgClientInterface
+{
+    private readonly Client $client;
+
+    public function __construct(?Client $client = null)
+    {
+        $this->client = $client ?? new Client([
+            RequestOptions::TIMEOUT => 20,
+            RequestOptions::CONNECT_TIMEOUT => 10,
+            RequestOptions::HEADERS => [
+                'User-Agent' => 'Archive.org Backups for Craft CMS',
+                'Accept' => 'application/json, text/html;q=0.9',
+            ],
+        ]);
+    }
+
+    public function submitUrl(string $url): array
+    {
+        try {
+            $response = $this->client->post('https://web.archive.org/save/', [
+                RequestOptions::FORM_PARAMS => ['url' => rtrim($url, '/')],
+                RequestOptions::HEADERS => [
+                    'Accept' => 'text/html,application/xhtml+xml',
+                ],
+            ]);
+        } catch (GuzzleException $exception) {
+            throw new TemporaryArchiveOrgException($exception->getMessage(), 0, $exception);
+        }
+
+        $body = (string) $response->getBody();
+        $observedLimit = ArchiveOrgParser::detectDailyLimit($body);
+
+        if ($observedLimit !== null) {
+            throw new QuotaExhaustedException($observedLimit);
+        }
+
+        $jobId = ArchiveOrgParser::extractJobId($body);
+
+        if ($jobId === null) {
+            throw new InvalidArchiveOrgResponseException('Archive.org did not return a job id.');
+        }
+
+        return [
+            'jobId' => $jobId,
+            'observedDailyLimit' => $observedLimit,
+        ];
+    }
+
+    public function getSaveStatus(string $jobId): array
+    {
+        $payload = $this->requestJson('https://web-wp.archive.org/save/status/' . rawurlencode($jobId));
+        $status = isset($payload['status']) ? (string) $payload['status'] : '';
+
+        if ($status === '') {
+            throw new InvalidArchiveOrgResponseException('Archive.org status payload is missing the status.');
+        }
+
+        return [
+            'status' => $status,
+            'message' => isset($payload['message']) ? (string) $payload['message'] : '',
+            'statusExt' => isset($payload['status_ext']) ? (string) $payload['status_ext'] : null,
+        ];
+    }
+
+    public function getAvailabilitySnapshot(string $url): ?array
+    {
+        $payload = $this->requestJson('https://archive.org/wayback/available/?url=' . rawurlencode($url));
+
+        return ArchiveOrgParser::extractAvailabilitySnapshot($payload);
+    }
+
+    public function getLatestCdxCapture(string $url): ?array
+    {
+        $query = [
+            'url' => $url,
+            'limit' => 1,
+            'filter' => 'statuscode:200',
+            'output' => 'json',
+            'fl' => 'timestamp,original',
+            'from' => (new DateTimeImmutable('-1 year', Craft::$app->getTimeZone()))->format('Y'),
+        ];
+
+        $payload = $this->requestJson(
+            'https://web.archive.org/cdx/search/cdx?' . http_build_query($query)
+        );
+
+        if (!is_array($payload)) {
+            throw new InvalidArchiveOrgResponseException('Archive.org CDX payload is invalid.');
+        }
+
+        /** @var array<int, array<int, string>> $payload */
+        return ArchiveOrgParser::extractLatestCdxCapture($payload);
+    }
+
+    /**
+     * @return array<mixed>
+     */
+    private function requestJson(string $url): array
+    {
+        try {
+            $response = $this->client->get($url);
+        } catch (GuzzleException $exception) {
+            throw new TemporaryArchiveOrgException($exception->getMessage(), 0, $exception);
+        }
+
+        $status = $response->getStatusCode();
+
+        if ($status >= 500) {
+            throw new TemporaryArchiveOrgException('Archive.org is temporarily unavailable.');
+        }
+
+        $decoded = Json::decodeIfJson((string) $response->getBody());
+
+        if (!is_array($decoded)) {
+            throw new InvalidArchiveOrgResponseException('Archive.org did not return valid JSON.');
+        }
+
+        /** @var array<string, mixed> $decoded */
+        return $decoded;
+    }
+}
