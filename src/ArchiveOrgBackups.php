@@ -104,7 +104,7 @@ final class ArchiveOrgBackups extends Plugin
         $this->registerPluginEvents();
         $this->registerElementHooks();
 
-        Craft::$app->getOnInit(function(): void {
+        Craft::$app->onInit(function(): void {
             $this->getHeartbeat()->ensureScheduled();
         });
     }
