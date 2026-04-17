@@ -92,21 +92,30 @@ final class IndexingService extends Component
             return;
         }
 
+        if ($status['status'] === 'pending') {
+            ArchiveOrgBackups::plugin()->getTargets()->updateStatusPoll(
+                $target,
+                $status['status'],
+                $status['message'],
+                $status['statusExt']
+            );
+            $this->scheduleStatusPoll($targetId, $attempt + 1, $attempt + 1);
+            return;
+        }
+
+        if ($status['status'] !== 'success') {
+            $message = $status['statusExt'] ?? $status['message'];
+
+            ArchiveOrgBackups::plugin()->getTargets()->markSubmissionPollingFailed($target, $message);
+            return;
+        }
+
         ArchiveOrgBackups::plugin()->getTargets()->updateStatusPoll(
             $target,
             $status['status'],
             $status['message'],
             $status['statusExt']
         );
-
-        if ($status['status'] === 'pending') {
-            $this->scheduleStatusPoll($targetId, $attempt + 1, $attempt + 1);
-            return;
-        }
-
-        if ($status['status'] !== 'success') {
-            return;
-        }
 
         $this->scheduleConfirmation($targetId, 0);
     }

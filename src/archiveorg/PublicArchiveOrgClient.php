@@ -25,6 +25,7 @@ final class PublicArchiveOrgClient implements ArchiveOrgClientInterface
         $this->client = $client ?? new Client([
             RequestOptions::TIMEOUT => 20,
             RequestOptions::CONNECT_TIMEOUT => 10,
+            RequestOptions::HTTP_ERRORS => false,
             RequestOptions::HEADERS => [
                 'User-Agent' => 'Archive.org Backups for Craft CMS',
                 'Accept' => 'application/json, text/html;q=0.9',
@@ -45,11 +46,22 @@ final class PublicArchiveOrgClient implements ArchiveOrgClientInterface
             throw new TemporaryArchiveOrgException($exception->getMessage(), 0, $exception);
         }
 
+        $status = $response->getStatusCode();
         $body = (string) $response->getBody();
         $observedLimit = ArchiveOrgParser::detectDailyLimit($body);
 
         if ($observedLimit !== null) {
             throw new QuotaExhaustedException($observedLimit);
+        }
+
+        if ($status >= 500) {
+            throw new TemporaryArchiveOrgException('Archive.org is temporarily unavailable.');
+        }
+
+        if ($status >= 400) {
+            throw new InvalidArchiveOrgResponseException(
+                'Archive.org save request failed with HTTP ' . $status . '.'
+            );
         }
 
         $jobId = ArchiveOrgParser::extractJobId($body);
@@ -122,8 +134,14 @@ final class PublicArchiveOrgClient implements ArchiveOrgClientInterface
 
         $status = $response->getStatusCode();
 
-        if ($status >= 500) {
+        if ($status === 429 || $status >= 500) {
             throw new TemporaryArchiveOrgException('Archive.org is temporarily unavailable.');
+        }
+
+        if ($status >= 400) {
+            throw new InvalidArchiveOrgResponseException(
+                'Archive.org request failed with HTTP ' . $status . '.'
+            );
         }
 
         $decoded = Json::decodeIfJson((string) $response->getBody());

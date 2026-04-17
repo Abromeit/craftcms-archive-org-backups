@@ -167,6 +167,8 @@ final class TargetService extends Component
         $record->lastJobStatus = ArchiveOrgBackups::JOB_STATUS_PENDING;
         $record->indexingStatus = ArchiveOrgBackups::INDEXING_PENDING;
         $record->indexedAt = null;
+        $record->lastSnapshotTimestamp = null;
+        $record->lastSnapshotUrl = null;
         $record->lastError = null;
         $record->nextSubmissionAt = null;
         $record->save(false);
