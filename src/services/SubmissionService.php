@@ -44,6 +44,10 @@ final class SubmissionService extends Component
 
     public function processDueTargets(): int
     {
+        if (!ArchiveOrgBackups::isOutboundEnabled()) {
+            return 0;
+        }
+
         $mutex = Craft::$app->getMutex();
 
         if (!$mutex->acquire(self::LOCK_KEY, 0)) {

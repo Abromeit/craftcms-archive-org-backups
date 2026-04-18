@@ -36,6 +36,10 @@ final class HeartbeatService extends Component
 
     public function ensureScheduled(bool $force = false): void
     {
+        if (!ArchiveOrgBackups::isOutboundEnabled()) {
+            return;
+        }
+
         $cache = Craft::$app->getCache();
         $mutex = Craft::$app->getMutex();
         $now = time();
@@ -59,6 +63,10 @@ final class HeartbeatService extends Component
 
     public function runMaintenance(): void
     {
+        if (!ArchiveOrgBackups::isOutboundEnabled()) {
+            return;
+        }
+
         $mutex = Craft::$app->getMutex();
 
         if (!$mutex->acquire(self::LOCK_KEY, 0)) {

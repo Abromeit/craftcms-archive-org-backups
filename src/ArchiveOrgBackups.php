@@ -77,6 +77,20 @@ final class ArchiveOrgBackups extends Plugin
         return self::$plugin;
     }
 
+
+    /**
+     * Hard gate for all outbound Archive.org traffic: the plugin only ever
+     * enqueues or performs work against Save Page Now / Wayback when Craft is
+     * running with CRAFT_ENVIRONMENT=production. Staging / dev / local clones
+     * must never submit URLs or probe snapshots, even after a fresh install.
+     *
+     * @return bool
+     */
+    public static function isOutboundEnabled(): bool
+    {
+        return Craft::$app->env === 'production';
+    }
+
     public function init(): void
     {
         parent::init();
@@ -278,6 +292,11 @@ final class ArchiveOrgBackups extends Plugin
     private function queueMaintenance(): void
     {
         Craft::$app->getQueue()->push(new SyncTargetsJob());
+
+        if (!self::isOutboundEnabled()) {
+            return;
+        }
+
         Craft::$app->getQueue()->push(new SubmitDueTargetsJob());
         $this->getHeartbeat()->ensureScheduled();
     }

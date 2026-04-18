@@ -92,6 +92,18 @@ The snapshot viewing URL and the external-snapshot probe always hit
 `https://web.archive.org`, and can only be redirected via the global
 `ARCHIVEORG_BACKUPS_BASE_URL`.
 
+## Production-only outbound traffic
+
+As a hard safety net, the plugin only ever talks to Archive.org when Craft is
+running with `CRAFT_ENVIRONMENT=production`. On any other environment
+(staging, dev, local clones) the plugin will not enqueue heartbeats, will not
+submit URLs to Save Page Now, and will not probe Wayback for snapshots — even
+on a fresh install or when the Craft control panel is opened.
+
+Tracked targets are still discovered and shown in the dashboard, so you can
+review which URLs would be archived, but nothing leaves the server until
+`CRAFT_ENVIRONMENT` is set to `production`.
+
 ## Queue Execution
 
 The plugin works with Craft's default HTTP queue runner, so it can operate without cron.

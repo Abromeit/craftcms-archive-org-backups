@@ -539,6 +539,10 @@ final class TargetService extends Component
                 return;
             }
 
+            if (!ArchiveOrgBackups::isOutboundEnabled()) {
+                return;
+            }
+
             Craft::$app->getQueue()->push(new SyncTargetsJob());
             Craft::$app->getQueue()->push(new SubmitDueTargetsJob());
             ArchiveOrgBackups::plugin()->getHeartbeat()->ensureScheduled();
