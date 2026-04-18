@@ -439,10 +439,19 @@ final class TargetService extends Component
         $allowedSorts = ['url', 'lastSubmittedAt', 'nextSubmissionAt'];
         $sort = in_array($sort, $allowedSorts, true) ? $sort : 'nextSubmissionAt';
         $dir = strtolower($dir) === 'desc' ? SORT_DESC : SORT_ASC;
-        $orderBy = [$sort => $dir];
 
-        if ($sort !== 'url') {
-            $orderBy['url'] = SORT_ASC;
+        // The "Last Submission" column merges `lastSubmittedAt` (our own submissions)
+        // with `lastSnapshotTimestamp` (pre-existing third-party snapshots).
+        // Those live in different columns and different formats, so this sort is
+        // handled in PHP after fetching; SQL handles `url` and `nextSubmissionAt`.
+        if ($sort === 'lastSubmittedAt') {
+            $orderBy = ['url' => SORT_ASC];
+        } else {
+            $orderBy = [$sort => $dir];
+
+            if ($sort !== 'url') {
+                $orderBy['url'] = SORT_ASC;
+            }
         }
 
         $rows = ArchiveTargetRecord::find()
@@ -456,18 +465,24 @@ final class TargetService extends Component
                 && $row->lastSnapshotTimestamp !== null;
 
             $lastSubmissionLabel = null;
+            $lastSubmissionSortKey = null;
 
             if ($row->lastSubmittedAt !== null) {
                 $lastSubmissionLabel = Craft::$app->getFormatter()->asDatetime($row->lastSubmittedAt);
+                $lastSubmissionSortKey = $this->toSortableDatetime($row->lastSubmittedAt);
             } elseif ($isExternalSnapshot) {
-                $lastSubmissionLabel = Craft::$app->getFormatter()
-                    ->asDatetime(self::cdxTimestampToDatetime($row->lastSnapshotTimestamp));
+                $externalDate = self::cdxTimestampToDatetime($row->lastSnapshotTimestamp);
+                $lastSubmissionLabel = Craft::$app->getFormatter()->asDatetime($externalDate);
+                $lastSubmissionSortKey = $externalDate instanceof \DateTimeImmutable
+                    ? $externalDate->format('Y-m-d H:i:s')
+                    : null;
             }
 
             $result[] = [
                 'id' => (int) $row->id,
                 'url' => $row->url,
                 'lastSubmissionLabel' => $lastSubmissionLabel,
+                'lastSubmissionSortKey' => $lastSubmissionSortKey,
                 'lastSnapshotUrl' => $row->lastSnapshotUrl,
                 'nextSubmissionLabel' => $row->nextSubmissionAt
                     ? Craft::$app->getFormatter()->asDatetime($row->nextSubmissionAt)
@@ -478,6 +493,15 @@ final class TargetService extends Component
                 'isExternalSnapshot' => $isExternalSnapshot,
             ];
         }
+
+        if ($sort === 'lastSubmittedAt') {
+            $this->sortByLastSubmission($result, $dir === SORT_DESC);
+        }
+
+        foreach ($result as &$resultRow) {
+            unset($resultRow['lastSubmissionSortKey']);
+        }
+        unset($resultRow);
 
         $notice = '';
 
@@ -624,6 +648,69 @@ final class TargetService extends Component
     {
         return $siteId . ':' . $url;
     }
+
+    /**
+     * Sorts dashboard rows by the merged "Last Submission" datetime
+     * (own submission or external snapshot). Rows without any value are pushed
+     * to the bottom regardless of direction; URL is used as a stable tiebreaker.
+     *
+     * @param  array<int, array<string, mixed>> $rows    - Rows to sort in place.
+     * @param  bool                             $descending - Whether to sort descending.
+     *
+     * @return void
+     */
+    private function sortByLastSubmission(array &$rows, bool $descending): void
+    {
+        usort($rows, static function (array $a, array $b) use ($descending): int {
+            $aKey = $a['lastSubmissionSortKey'] ?? null;
+            $bKey = $b['lastSubmissionSortKey'] ?? null;
+
+            if ($aKey === null && $bKey === null) {
+                return strcmp((string) $a['url'], (string) $b['url']);
+            }
+
+            if ($aKey === null) {
+                return 1;
+            }
+
+            if ($bKey === null) {
+                return -1;
+            }
+
+            $cmp = strcmp((string) $aKey, (string) $bKey);
+
+            if ($cmp === 0) {
+                return strcmp((string) $a['url'], (string) $b['url']);
+            }
+
+            return $descending ? -$cmp : $cmp;
+        });
+    }
+
+
+    /**
+     * Normalizes a Craft/MySQL datetime string into a lexicographically
+     * sortable `Y-m-d H:i:s` value. Returns null on malformed input.
+     *
+     * @param  ?string $value - Datetime string as stored by Craft.
+     *
+     * @return ?string
+     */
+    private function toSortableDatetime(?string $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        try {
+            $date = new \DateTimeImmutable($value, new \DateTimeZone('UTC'));
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return $date->format('Y-m-d H:i:s');
+    }
+
 
     /**
      * Converts an Archive.org CDX YmdHis timestamp (UTC) into a DateTimeImmutable
