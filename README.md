@@ -100,6 +100,14 @@ the primary site's base URL is not a local host (`localhost`, `*.local`,
 `ARCHIVEORG_BACKUPS_*_BASE_URL` override (see below) re-enables outbound
 traffic so you can point it at a mock server.
 
+## SEOmatic compatibility
+
+If [SEOmatic](https://plugins.craftcms.com/seomatic?craft5) is installed and
+an entry has a `SeoSettings` field whose `robots` directive contains `none`,
+`noindex`, or `noarchive`, the entry is skipped and never submitted to
+Archive.org. Only the per-entry SEOmatic field is evaluated; global or
+section-level SEOmatic defaults are not inspected.
+
 ## Queue Execution
 
 The plugin works with Craft's default HTTP queue runner, so it can operate without cron.
