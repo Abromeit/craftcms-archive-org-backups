@@ -224,24 +224,55 @@ final class UrlManifestService extends Component
 
     private function extractSeoSettingsRobotsDirective(Entry $entry, string $fieldHandle): ?string
     {
+        $serializedFieldValues = $entry->getSerializedFieldValues([$fieldHandle]);
+        $serializedValue = $serializedFieldValues[$fieldHandle] ?? null;
+        $robots = $this->robotsDirectiveFromSerializedSeoSettings($serializedValue);
+
+        if (is_string($robots)) {
+            return $robots;
+        }
+
         $value = $entry->getFieldValue($fieldHandle);
-
-        if (!is_object($value)) {
-            return null;
-        }
-
-        $metaGlobalVars = $value->metaGlobalVars ?? null;
-
-        if (!is_object($metaGlobalVars)) {
-            return null;
-        }
-
-        $robots = $metaGlobalVars->robots ?? null;
+        $metaGlobalVars = $this->arrayValue($value, 'metaGlobalVars');
+        $robots = $this->arrayValue($metaGlobalVars, 'robots');
 
         if (!is_string($robots)) {
             return null;
         }
 
         return $robots;
+    }
+
+    private function robotsDirectiveFromSerializedSeoSettings(mixed $value): ?string
+    {
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+
+            if (is_array($decoded)) {
+                $value = $decoded;
+            }
+        }
+
+        $metaGlobalVars = $this->arrayValue($value, 'metaGlobalVars');
+        $robots = $this->arrayValue($metaGlobalVars, 'robots');
+
+        if (!is_string($robots)) {
+            return null;
+        }
+
+        return $robots;
+    }
+
+    private function arrayValue(mixed $value, string $key): mixed
+    {
+        if (is_array($value)) {
+            return $value[$key] ?? null;
+        }
+
+        if (!is_object($value)) {
+            return null;
+        }
+
+        return $value->$key ?? null;
     }
 }
