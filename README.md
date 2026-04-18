@@ -1,16 +1,15 @@
 # Archive.org Backups for Craft CMS
 
-Archive.org Backups is a Craft CMS 5 plugin that submits selected entry URLs to the
+Archive.org Backups for Craft CMS is a Craft CMS 5 plugin that submits selected entry URLs to the
 Internet Archive Save Page Now service, tracks submission history, and confirms when a
-snapshot becomes visible through Archive.org indexing APIs.
+snapshot becomes visible through Archive.org.
 
 ## Features
 
 - Archive selected Craft entry sections to archive.org automatically
-- See all tracked URLs in one control panel screen
-- Monitor last submission time, next submission time, and indexing status
-- Prioritize changed pages while still refreshing unchanged pages on a schedule
-- Stay within the public Save Page Now daily limit
+- See all tracked URLs and their status in one control panel screen
+- Prioritizes changed entries (pages) while still refreshing unchanged entries on a schedule
+- Automatically stays within the public Save Page Now daily limit
 - Get live dashboard updates while you keep the page open
 
 ## Requirements
@@ -47,12 +46,6 @@ Then install the plugin in the Craft control panel or with:
 php craft plugin/install archive-org-backups
 ```
 
-After the package is published on Packagist, the install command can be simplified to:
-
-```bash
-composer require abromeit/craftcms-archive-org-backups
-```
-
 ## Configuration
 
 Open `Settings -> Plugins -> Archive.org Backups` and configure:
@@ -63,7 +56,7 @@ Open `Settings -> Plugins -> Archive.org Backups` and configure:
 - `Unchanged refresh interval (days)` (default `7`)
 - `Heartbeat interval (minutes)` (default `15`)
 
-Only selected entry sections are tracked in v1.
+**Important: Configure this - only selected entry sections are tracked!**
 
 ### `.env` endpoint overrides
 
@@ -139,5 +132,7 @@ vendor/bin/phpunit
 Copyright (c) 2026 Daniel Abromeit (https://daniel-abromeit.de/)
 
 Thank you to [KOCH ESSEN](https://koch-essen.de/) for providing the resources without which this project would not have been possible.
+
+Thank you to https://wordpress.org/plugins/internet-archive-wayback-machine-link-fixer/ for the inspiration for this CraftCMS plugin. The submission mechanic is based on the original WordPress code by the Internet Archive.
 
 Released under the MIT License. [See LICENSE for details.](LICENSE.txt)
