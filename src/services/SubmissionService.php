@@ -18,6 +18,14 @@ use abromeit\archiveorgbackups\records\ArchiveTargetRecord;
 
 final class SubmissionService extends Component
 {
+    public const SUBMIT_ACCEPTED = 'accepted';
+
+    public const SUBMIT_PERMANENT_FAILURE = 'permanent_failure';
+
+    public const SUBMIT_TEMPORARY_FAILURE = 'temporary_failure';
+
+    public const SUBMIT_QUOTA_EXHAUSTED = 'quota_exhausted';
+
     private const LOCK_KEY = 'archive-org-backups:submit-due-targets';
 
     private const STALE_PENDING_RECOVERY_AGE = 1800;
@@ -68,12 +76,20 @@ final class SubmissionService extends Component
         $submitted = 0;
 
         foreach (ArchiveOrgBackups::plugin()->getTargets()->getDueTargets($limit) as $target) {
-            if ($this->submitTarget($target)) {
+            $outcome = $this->submitTarget($target);
+
+            if ($outcome === self::SUBMIT_ACCEPTED) {
                 ++$submitted;
                 continue;
             }
 
-            if ($quota->isQuotaExhausted()) {
+            // Stop the batch as soon as Archive.org signals back-off (429/5xx
+            // or exhausted daily quota). Remaining targets stay due and are
+            // retried on the next heartbeat once SPN jobs have drained.
+            if (
+                $outcome === self::SUBMIT_TEMPORARY_FAILURE
+                || $outcome === self::SUBMIT_QUOTA_EXHAUSTED
+            ) {
                 break;
             }
         }
@@ -102,7 +118,7 @@ final class SubmissionService extends Component
         }
     }
 
-    public function submitTarget(ArchiveTargetRecord $target): bool
+    public function submitTarget(ArchiveTargetRecord $target): string
     {
         try {
             $result = $this->client->submitUrl($target->url);
@@ -116,7 +132,7 @@ final class SubmissionService extends Component
                 $exception->observedLimit
             );
 
-            return false;
+            return self::SUBMIT_QUOTA_EXHAUSTED;
         } catch (TemporaryArchiveOrgException $exception) {
             ArchiveOrgBackups::plugin()->getTargets()->updateSubmissionFailure(
                 $target,
@@ -125,7 +141,7 @@ final class SubmissionService extends Component
                 Db::prepareDateForDb((new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->modify('+1 hour'))
             );
 
-            return false;
+            return self::SUBMIT_TEMPORARY_FAILURE;
         } catch (ArchiveOrgException $exception) {
             ArchiveOrgBackups::plugin()->getTargets()->updateSubmissionFailure(
                 $target,
@@ -134,7 +150,7 @@ final class SubmissionService extends Component
                 Db::prepareDateForDb((new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->modify('+1 day'))
             );
 
-            return false;
+            return self::SUBMIT_PERMANENT_FAILURE;
         }
 
         ArchiveOrgBackups::plugin()->getTargets()->updateSubmissionAccepted(
@@ -151,6 +167,6 @@ final class SubmissionService extends Component
                 'expectedJobId' => $result['jobId'],
             ]));
 
-        return true;
+        return self::SUBMIT_ACCEPTED;
     }
 }
