@@ -14,6 +14,14 @@ use abromeit\archiveorgbackups\ArchiveOrgBackups;
 
 final class UrlManifestService extends Component
 {
+    private const SEO_SETTINGS_FIELD_CLASS = 'nystudio107\\seomatic\\fields\\SeoSettings';
+
+    private const EXCLUDED_ROBOTS_DIRECTIVES = [
+        'noarchive',
+        'noindex',
+        'none',
+    ];
+
     /**
      * @return array<int, array{label:string, value:string}>
      */
@@ -112,6 +120,10 @@ final class UrlManifestService extends Component
             return false;
         }
 
+        if ($this->hasExcludedRobotsDirectives($entry)) {
+            return false;
+        }
+
         if ($entry->uri === null || $entry->uri === '__home__') {
             return $entry->getUrl() !== null;
         }
@@ -145,5 +157,91 @@ final class UrlManifestService extends Component
         }
 
         return array_values(array_unique($ids));
+    }
+
+    public static function containsExcludedRobotsDirectives(?string $robots): bool
+    {
+        if (!is_string($robots) || trim($robots) === '') {
+            return false;
+        }
+
+        $directives = preg_split('/\s*,\s*/', strtolower($robots));
+
+        if (!is_array($directives)) {
+            return false;
+        }
+
+        foreach ($directives as $directive) {
+            if (!in_array($directive, self::EXCLUDED_ROBOTS_DIRECTIVES, true)) {
+                continue;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private function hasExcludedRobotsDirectives(Entry $entry): bool
+    {
+        $fieldLayout = $entry->getFieldLayout();
+
+        if ($fieldLayout === null) {
+            return false;
+        }
+
+        foreach ($fieldLayout->getCustomFields() as $field) {
+            if ($field::class !== self::SEO_SETTINGS_FIELD_CLASS) {
+                continue;
+            }
+
+            if (!$this->isSeoSettingsRobotsField($field)) {
+                continue;
+            }
+
+            $robots = $this->extractSeoSettingsRobotsDirective($entry, $field->handle);
+
+            if (!self::containsExcludedRobotsDirectives($robots)) {
+                continue;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private function isSeoSettingsRobotsField(object $field): bool
+    {
+        $generalEnabledFields = $field->generalEnabledFields ?? null;
+
+        if (($field->generalTabEnabled ?? null) !== true || !is_array($generalEnabledFields)) {
+            return false;
+        }
+
+        return in_array('robots', $generalEnabledFields, true);
+    }
+
+    private function extractSeoSettingsRobotsDirective(Entry $entry, string $fieldHandle): ?string
+    {
+        $value = $entry->getFieldValue($fieldHandle);
+
+        if (!is_object($value)) {
+            return null;
+        }
+
+        $metaGlobalVars = $value->metaGlobalVars ?? null;
+
+        if (!is_object($metaGlobalVars)) {
+            return null;
+        }
+
+        $robots = $metaGlobalVars->robots ?? null;
+
+        if (!is_string($robots)) {
+            return null;
+        }
+
+        return $robots;
     }
 }
