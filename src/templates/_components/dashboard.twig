@@ -46,7 +46,7 @@
                             <td><a href="{{ row.url }}" target="_blank" rel="noopener">{{ row.url }}</a></td>
                             <td>
                                 {% if row.lastSubmissionLabel %}
-                                    <span class="aob-status{% if row.isExternalSnapshot %} aob-status--external{% endif %}">
+                                    <span class="aob-status{% if row.isExternalSnapshot %} aob-status--external{% elseif row.isIndexed %} aob-status--indexed{% endif %}">
                                         {% if row.hasSnapshotUrl %}
                                             <a href="{{ row.lastSnapshotUrl }}" target="_blank" rel="noopener">
                                                 {{ row.lastSubmissionLabel }}

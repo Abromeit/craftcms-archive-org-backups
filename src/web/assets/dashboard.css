@@ -97,8 +97,12 @@
 
 .aob-status--external a,
 .aob-status--external {
-    color: #526277;
-    font-style: italic;
+    color: #c2410c;
+}
+
+.aob-status--indexed a,
+.aob-status--indexed {
+    color: #356859;
 }
 
 .aob-check {
