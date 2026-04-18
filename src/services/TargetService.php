@@ -522,36 +522,50 @@ final class TargetService extends Component
         return $siteId . ':' . $url;
     }
 
+    public static function statusLabelKey(?string $lastJobStatus, string $indexingStatus): string
+    {
+        if ($lastJobStatus === ArchiveOrgBackups::JOB_STATUS_PENDING) {
+            return 'Submitted';
+        }
+
+        if ($lastJobStatus === ArchiveOrgBackups::JOB_STATUS_QUOTA_EXHAUSTED) {
+            return 'Daily limit reached';
+        }
+
+        if ($lastJobStatus === ArchiveOrgBackups::JOB_STATUS_RETRY) {
+            return 'Retry scheduled';
+        }
+
+        if ($lastJobStatus === ArchiveOrgBackups::JOB_STATUS_FAILED) {
+            return 'Error';
+        }
+
+        if ($indexingStatus === ArchiveOrgBackups::INDEXING_FAILED) {
+            return 'Indexing failed';
+        }
+
+        if ($indexingStatus === ArchiveOrgBackups::INDEXING_INDEXED) {
+            return 'Successfully archived';
+        }
+
+        if (
+            $lastJobStatus === ArchiveOrgBackups::JOB_STATUS_SUCCESS
+            || $indexingStatus === ArchiveOrgBackups::INDEXING_PENDING
+        ) {
+            return 'Submitted';
+        }
+
+        return 'Awaiting submission';
+    }
+
     private function statusLabel(ArchiveTargetRecord $row): string
     {
-        if ($row->lastJobStatus === ArchiveOrgBackups::JOB_STATUS_PENDING) {
-            return Craft::t(ArchiveOrgBackups::TRANSLATION_CATEGORY, 'Submitting');
-        }
-
-        if ($row->lastJobStatus === ArchiveOrgBackups::JOB_STATUS_QUOTA_EXHAUSTED) {
-            return Craft::t(ArchiveOrgBackups::TRANSLATION_CATEGORY, 'Daily limit reached');
-        }
-
-        if ($row->lastJobStatus === ArchiveOrgBackups::JOB_STATUS_RETRY) {
-            return Craft::t(ArchiveOrgBackups::TRANSLATION_CATEGORY, 'Retry scheduled');
-        }
-
-        if ($row->lastJobStatus === ArchiveOrgBackups::JOB_STATUS_FAILED) {
-            return Craft::t(ArchiveOrgBackups::TRANSLATION_CATEGORY, 'Error');
-        }
-
-        if ($row->indexingStatus === ArchiveOrgBackups::INDEXING_FAILED) {
-            return Craft::t(ArchiveOrgBackups::TRANSLATION_CATEGORY, 'Indexing failed');
-        }
-
-        if ($row->indexingStatus === ArchiveOrgBackups::INDEXING_INDEXED) {
-            return Craft::t(ArchiveOrgBackups::TRANSLATION_CATEGORY, 'Indexed');
-        }
-
-        if ($row->indexingStatus === ArchiveOrgBackups::INDEXING_PENDING) {
-            return Craft::t(ArchiveOrgBackups::TRANSLATION_CATEGORY, 'Awaiting indexing');
-        }
-
-        return Craft::t(ArchiveOrgBackups::TRANSLATION_CATEGORY, 'Awaiting submission');
+        return Craft::t(
+            ArchiveOrgBackups::TRANSLATION_CATEGORY,
+            self::statusLabelKey(
+                $row->lastJobStatus,
+                $row->indexingStatus
+            )
+        );
     }
 }
