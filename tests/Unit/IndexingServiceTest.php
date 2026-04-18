@@ -14,8 +14,7 @@ final class IndexingServiceTest extends TestCase
         self::assertTrue(
             IndexingService::isSnapshotCurrent(
                 '2026-04-17 12:00:00',
-                '20260417115800',
-                null
+                '20260417115800'
             )
         );
     }
@@ -25,9 +24,16 @@ final class IndexingServiceTest extends TestCase
         self::assertFalse(
             IndexingService::isSnapshotCurrent(
                 '2026-04-17 12:00:00',
-                '20260416120000',
-                null
+                '20260416120000'
             )
+        );
+    }
+
+    public function testSnapshotUrlIsBuiltFromCdxCapture(): void
+    {
+        self::assertSame(
+            'https://web.archive.org/web/20260417120000/https://example.com/',
+            IndexingService::snapshotUrlFromCapture('20260417120000', 'https://example.com/')
         );
     }
 }

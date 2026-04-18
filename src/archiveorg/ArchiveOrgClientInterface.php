@@ -17,11 +17,6 @@ interface ArchiveOrgClientInterface
     public function getSaveStatus(string $jobId): array;
 
     /**
-     * @return array{timestamp:string, url:string, status:int}|null
-     */
-    public function getAvailabilitySnapshot(string $url): ?array;
-
-    /**
      * @return array{timestamp:string, original:string}|null
      */
     public function getLatestCdxCapture(string $url): ?array;

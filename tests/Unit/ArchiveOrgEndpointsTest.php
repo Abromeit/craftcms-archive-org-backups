@@ -14,7 +14,6 @@ final class ArchiveOrgEndpointsTest extends TestCase
         putenv(ArchiveOrgEndpoints::GLOBAL_BASE_URL_ENV);
         putenv(ArchiveOrgEndpoints::SAVE_BASE_URL_ENV);
         putenv(ArchiveOrgEndpoints::SAVE_STATUS_BASE_URL_ENV);
-        putenv(ArchiveOrgEndpoints::AVAILABILITY_BASE_URL_ENV);
         putenv(ArchiveOrgEndpoints::CDX_BASE_URL_ENV);
 
         parent::tearDown();
@@ -51,6 +50,11 @@ final class ArchiveOrgEndpointsTest extends TestCase
                 'url' => 'https://example.com',
                 'limit' => 1,
             ])
+        );
+
+        self::assertSame(
+            'http://cdx.local/web/20260417120000/https://example.com/',
+            ArchiveOrgEndpoints::snapshotUrl('20260417120000', 'https://example.com/')
         );
     }
 }

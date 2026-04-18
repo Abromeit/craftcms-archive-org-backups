@@ -23,26 +23,19 @@ final class ArchiveOrgParserTest extends TestCase
         self::assertSame(150, ArchiveOrgParser::detectDailyLimit($body));
     }
 
-    public function testExtractsAvailabilitySnapshot(): void
+    public function testExtractsLatestCdxCapture(): void
     {
         $payload = [
-            'archived_snapshots' => [
-                'closest' => [
-                    'available' => true,
-                    'timestamp' => '20260417120000',
-                    'url' => 'https://web.archive.org/web/20260417120000/https://example.com/',
-                    'status' => '200',
-                ],
-            ],
+            ['timestamp', 'original'],
+            ['20260417120000', 'https://example.com/'],
         ];
 
         self::assertSame(
             [
                 'timestamp' => '20260417120000',
-                'url' => 'https://web.archive.org/web/20260417120000/https://example.com/',
-                'status' => 200,
+                'original' => 'https://example.com/',
             ],
-            ArchiveOrgParser::extractAvailabilitySnapshot($payload)
+            ArchiveOrgParser::extractLatestCdxCapture($payload)
         );
     }
 }

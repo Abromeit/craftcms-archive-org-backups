@@ -93,13 +93,6 @@ final class PublicArchiveOrgClient implements ArchiveOrgClientInterface
         ];
     }
 
-    public function getAvailabilitySnapshot(string $url): ?array
-    {
-        $payload = $this->requestJson(ArchiveOrgEndpoints::availabilityUrl($url));
-
-        return ArchiveOrgParser::extractAvailabilitySnapshot($payload);
-    }
-
     public function getLatestCdxCapture(string $url): ?array
     {
         $query = [

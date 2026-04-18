@@ -10,6 +10,7 @@ use DateTimeZone;
 use craft\base\Component;
 use abromeit\archiveorgbackups\ArchiveOrgBackups;
 use abromeit\archiveorgbackups\archiveorg\ArchiveOrgClientInterface;
+use abromeit\archiveorgbackups\archiveorg\ArchiveOrgEndpoints;
 use abromeit\archiveorgbackups\archiveorg\PublicArchiveOrgClient;
 use abromeit\archiveorgbackups\archiveorg\exceptions\ArchiveOrgException;
 use abromeit\archiveorgbackups\archiveorg\exceptions\TemporaryArchiveOrgException;
@@ -24,22 +25,29 @@ final class IndexingService extends Component
 
     private ArchiveOrgClientInterface $client;
 
-    public static function isSnapshotCurrent(
-        ?string $submittedAt,
-        ?string $availabilityTimestamp,
-        ?string $cdxTimestamp
-    ): bool {
+    public static function isSnapshotCurrent(?string $submittedAt, ?string $cdxTimestamp): bool
+    {
         $submitted = $submittedAt !== null ? strtotime($submittedAt) : false;
-        $latest = max(
-            self::normalizeTimestamp($availabilityTimestamp),
-            self::normalizeTimestamp($cdxTimestamp)
-        );
+        $latest = self::normalizeTimestamp($cdxTimestamp);
 
         if ($submitted === false || $latest === 0) {
             return false;
         }
 
         return $latest >= ($submitted - 300);
+    }
+
+    public static function snapshotUrlFromCapture(?string $timestamp, ?string $original): ?string
+    {
+        if (!is_string($timestamp) || !is_string($original)) {
+            return null;
+        }
+
+        if ($timestamp === '' || $original === '') {
+            return null;
+        }
+
+        return ArchiveOrgEndpoints::snapshotUrl($timestamp, $original);
     }
 
     private static function normalizeTimestamp(?string $timestamp): int
@@ -151,7 +159,6 @@ final class IndexingService extends Component
         }
 
         try {
-            $availability = $this->client->getAvailabilitySnapshot($target->url);
             $cdx = $this->client->getLatestCdxCapture($target->url);
         } catch (TemporaryArchiveOrgException) {
             if (!$liveWatch) {
@@ -165,21 +172,16 @@ final class IndexingService extends Component
             return false;
         }
 
-        $availabilityTimestamp = $availability['timestamp'] ?? null;
         $cdxTimestamp = $cdx['timestamp'] ?? null;
-        $snapshotUrl = $availability['url'] ?? null;
-        $indexed = self::isSnapshotCurrent(
-            $target->lastSubmittedAt,
-            $availabilityTimestamp,
-            $cdxTimestamp
-        );
+        $snapshotUrl = self::snapshotUrlFromCapture($cdxTimestamp, $cdx['original'] ?? null);
+        $indexed = self::isSnapshotCurrent($target->lastSubmittedAt, $cdxTimestamp);
 
         ArchiveOrgBackups::plugin()->getTargets()->updateIndexingResult(
             $target,
             $indexed,
-            $availabilityTimestamp ?? $cdxTimestamp,
+            $cdxTimestamp,
             $snapshotUrl ?? $target->lastSnapshotUrl,
-            $indexed ? null : 'Archive.org has not exposed the snapshot via Availability/CDX yet.'
+            $indexed ? null : 'Archive.org has not exposed the snapshot via CDX yet.'
         );
 
         if (!$indexed && !$liveWatch) {

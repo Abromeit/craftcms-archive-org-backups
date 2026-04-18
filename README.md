@@ -81,7 +81,6 @@ Or override individual endpoint bases:
 ```dotenv
 ARCHIVEORG_BACKUPS_SAVE_BASE_URL="http://127.0.0.1:8080"
 ARCHIVEORG_BACKUPS_SAVE_STATUS_BASE_URL="http://127.0.0.1:8080"
-ARCHIVEORG_BACKUPS_AVAILABILITY_BASE_URL="http://127.0.0.1:8080"
 ARCHIVEORG_BACKUPS_CDX_BASE_URL="http://127.0.0.1:8080"
 ```
 
@@ -89,7 +88,6 @@ Defaults:
 
 - `ARCHIVEORG_BACKUPS_SAVE_BASE_URL` -> `https://web.archive.org`
 - `ARCHIVEORG_BACKUPS_SAVE_STATUS_BASE_URL` -> `https://web-wp.archive.org`
-- `ARCHIVEORG_BACKUPS_AVAILABILITY_BASE_URL` -> `https://archive.org`
 - `ARCHIVEORG_BACKUPS_CDX_BASE_URL` -> `https://web.archive.org`
 
 ## Queue Execution

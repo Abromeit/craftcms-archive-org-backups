@@ -27,37 +27,6 @@ final class ArchiveOrgParser
     }
 
     /**
-     * @param array<string, mixed> $payload
-     * @return array{timestamp:string, url:string, status:int}|null
-     */
-    public static function extractAvailabilitySnapshot(array $payload): ?array
-    {
-        $closest = $payload['archived_snapshots']['closest'] ?? null;
-
-        if (!is_array($closest)) {
-            return null;
-        }
-
-        if (($closest['available'] ?? false) !== true) {
-            return null;
-        }
-
-        $timestamp = isset($closest['timestamp']) ? (string) $closest['timestamp'] : '';
-        $url = isset($closest['url']) ? (string) $closest['url'] : '';
-        $status = isset($closest['status']) ? (int) $closest['status'] : 0;
-
-        if ($timestamp === '' || $url === '' || $status <= 0) {
-            return null;
-        }
-
-        return [
-            'timestamp' => $timestamp,
-            'url' => $url,
-            'status' => $status,
-        ];
-    }
-
-    /**
      * @param array<int, array<int, string>> $payload
      * @return array{timestamp:string, original:string}|null
      */

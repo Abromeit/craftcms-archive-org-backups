@@ -14,8 +14,6 @@ final class ArchiveOrgEndpoints
 
     public const SAVE_STATUS_BASE_URL_ENV = 'ARCHIVEORG_BACKUPS_SAVE_STATUS_BASE_URL';
 
-    public const AVAILABILITY_BASE_URL_ENV = 'ARCHIVEORG_BACKUPS_AVAILABILITY_BASE_URL';
-
     public const CDX_BASE_URL_ENV = 'ARCHIVEORG_BACKUPS_CDX_BASE_URL';
 
     public static function saveUrl(): string
@@ -29,16 +27,16 @@ final class ArchiveOrgEndpoints
             . '/save/status/' . rawurlencode($jobId);
     }
 
-    public static function availabilityUrl(string $url): string
-    {
-        return self::baseUrl(self::AVAILABILITY_BASE_URL_ENV, 'https://archive.org')
-            . '/wayback/available/?url=' . rawurlencode($url);
-    }
-
     public static function cdxUrl(array $query): string
     {
         return self::baseUrl(self::CDX_BASE_URL_ENV, 'https://web.archive.org')
             . '/cdx/search/cdx?' . http_build_query($query);
+    }
+
+    public static function snapshotUrl(string $timestamp, string $original): string
+    {
+        return self::baseUrl(self::CDX_BASE_URL_ENV, 'https://web.archive.org')
+            . '/web/' . rawurlencode($timestamp) . '/' . $original;
     }
 
     private static function baseUrl(string $specificEnv, string $default): string
