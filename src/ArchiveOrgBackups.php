@@ -104,6 +104,10 @@ final class ArchiveOrgBackups extends Plugin
         $this->registerElementHooks();
 
         Craft::$app->onInit(function(): void {
+            if (Craft::$app instanceof ConsoleApplication) {
+                return;
+            }
+
             $this->getHeartbeat()->ensureScheduled();
         });
     }
@@ -111,6 +115,7 @@ final class ArchiveOrgBackups extends Plugin
     public function afterInstall(): void
     {
         parent::afterInstall();
+        $this->bootstrapTargets();
         $this->queueMaintenance();
     }
 
@@ -118,8 +123,7 @@ final class ArchiveOrgBackups extends Plugin
     {
         parent::afterSaveSettings();
 
-        $this->getTargets()->retireInvalidTargets();
-        $this->getTargets()->primeManifest(100);
+        $this->bootstrapTargets();
         $this->queueMaintenance();
     }
 
@@ -276,5 +280,11 @@ final class ArchiveOrgBackups extends Plugin
         Craft::$app->getQueue()->push(new SyncTargetsJob());
         Craft::$app->getQueue()->push(new SubmitDueTargetsJob());
         $this->getHeartbeat()->ensureScheduled();
+    }
+
+    private function bootstrapTargets(): void
+    {
+        $this->getTargets()->retireInvalidTargets();
+        $this->getTargets()->primeManifest(100);
     }
 }

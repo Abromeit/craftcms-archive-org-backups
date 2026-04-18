@@ -11,11 +11,17 @@ use craft\elements\Entry;
 use craft\helpers\Db;
 use yii\helpers\Json;
 use abromeit\archiveorgbackups\ArchiveOrgBackups;
+use abromeit\archiveorgbackups\jobs\SubmitDueTargetsJob;
+use abromeit\archiveorgbackups\jobs\SyncTargetsJob;
 use abromeit\archiveorgbackups\records\ArchiveAttemptRecord;
 use abromeit\archiveorgbackups\records\ArchiveTargetRecord;
 
 final class TargetService extends Component
 {
+    private const DISCOVERY_BOOTSTRAP_CACHE_KEY = 'archive-org-backups:discovery-bootstrap';
+
+    private const DISCOVERY_BOOTSTRAP_LOCK_KEY = 'archive-org-backups:discovery-bootstrap-lock';
+
     public function syncEntry(Entry $entry): void
     {
         $this->syncEntryId((int) $entry->id);
@@ -340,6 +346,8 @@ final class TargetService extends Component
      */
     public function getDashboardRows(string $sort, string $dir): array
     {
+        $this->bootstrapDiscoveryIfNeeded();
+
         $allowedSorts = ['url', 'lastSubmittedAt', 'nextSubmissionAt'];
         $sort = in_array($sort, $allowedSorts, true) ? $sort : 'nextSubmissionAt';
         $dir = strtolower($dir) === 'desc' ? SORT_DESC : SORT_ASC;
@@ -395,6 +403,49 @@ final class TargetService extends Component
             'rows' => $result,
             'notice' => $notice,
         ];
+    }
+
+    private function bootstrapDiscoveryIfNeeded(): void
+    {
+        if (ArchiveOrgBackups::plugin()->getManifest()->getEnabledSectionIds() === []) {
+            return;
+        }
+
+        if (ArchiveTargetRecord::find()->where(['isActive' => true])->exists()) {
+            return;
+        }
+
+        $cache = Craft::$app->getCache();
+        $lastBootstrapAt = (int) ($cache->get(self::DISCOVERY_BOOTSTRAP_CACHE_KEY) ?: 0);
+
+        if (($lastBootstrapAt + 300) > time()) {
+            return;
+        }
+
+        $mutex = Craft::$app->getMutex();
+
+        if (!$mutex->acquire(self::DISCOVERY_BOOTSTRAP_LOCK_KEY, 0)) {
+            return;
+        }
+
+        try {
+            if (ArchiveTargetRecord::find()->where(['isActive' => true])->exists()) {
+                return;
+            }
+
+            $cache->set(self::DISCOVERY_BOOTSTRAP_CACHE_KEY, time(), 600);
+            $this->primeManifest(100);
+
+            if (!ArchiveTargetRecord::find()->where(['isActive' => true])->exists()) {
+                return;
+            }
+
+            Craft::$app->getQueue()->push(new SyncTargetsJob());
+            Craft::$app->getQueue()->push(new SubmitDueTargetsJob());
+            ArchiveOrgBackups::plugin()->getHeartbeat()->ensureScheduled();
+        } finally {
+            $mutex->release(self::DISCOVERY_BOOTSTRAP_LOCK_KEY);
+        }
     }
 
     /**
