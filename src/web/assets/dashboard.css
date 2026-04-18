@@ -51,6 +51,7 @@
 
 .aob-table-wrap {
     overflow-x: auto;
+    overflow-y: visible;
     border: 1px solid rgba(15, 23, 42, 0.08);
     border-radius: 14px;
     background: #fff;
@@ -96,41 +97,58 @@
 
 .aob-check {
     position: relative;
-    display: inline-block;
-}
-
-.aob-check summary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     width: 20px;
     height: 20px;
-    cursor: pointer;
+    outline: none;
+}
+
+.aob-check__trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
     color: #356859;
     font-weight: 700;
-    list-style: none;
+    cursor: default;
 }
 
-.aob-check summary::-webkit-details-marker {
-    display: none;
+.aob-check:hover .aob-check__tip,
+.aob-check:focus .aob-check__tip,
+.aob-check:focus-within .aob-check__tip {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, 0);
 }
 
-.aob-check[open] .aob-check__tip {
-    display: block;
+.aob-check:focus-visible {
+    border-radius: 999px;
+    box-shadow: 0 0 0 2px rgba(53, 104, 89, 0.25);
 }
 
 .aob-check__tip {
     position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
+    top: calc(100% + 10px);
+    left: 50%;
     z-index: 20;
-    display: none;
-    width: 220px;
+    width: min(260px, calc(100vw - 32px));
     padding: 10px 12px;
     border-radius: 10px;
     background: #111827;
     color: #fff;
+    white-space: normal;
+    line-height: 1.4;
     box-shadow: 0 12px 24px rgba(15, 23, 42, 0.2);
+    opacity: 0;
+    visibility: hidden;
+    transform: translate(-50%, -4px);
+    transition:
+        opacity 120ms ease,
+        transform 120ms ease,
+        visibility 120ms ease;
 }
 
 .aob-empty {

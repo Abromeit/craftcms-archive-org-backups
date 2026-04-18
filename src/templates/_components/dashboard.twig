@@ -55,12 +55,16 @@
                                             {{ row.lastSubmissionLabel }}
                                         {% endif %}
                                         {% if row.isIndexed %}
-                                            <details class="aob-check">
-                                                <summary aria-label="{{ 'Indexing complete'|t('archive-org-backups') }}">✓</summary>
-                                                <div class="aob-check__tip" role="tooltip">
+                                            <span
+                                                class="aob-check"
+                                                tabindex="0"
+                                                aria-label="{{ 'Indexing complete'|t('archive-org-backups') }}"
+                                            >
+                                                <span class="aob-check__trigger" aria-hidden="true">✓</span>
+                                                <span class="aob-check__tip" role="tooltip">
                                                     {{ 'Indexing by archive.org is complete for this snapshot.'|t('archive-org-backups') }}
-                                                </div>
-                                            </details>
+                                                </span>
+                                            </span>
                                         {% endif %}
                                     </span>
                                 {% else %}
