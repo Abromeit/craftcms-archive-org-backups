@@ -52,7 +52,7 @@ final class PublicArchiveOrgClient implements ArchiveOrgClientInterface
             throw new QuotaExhaustedException($observedLimit);
         }
 
-        if ($status >= 500) {
+        if ($status === 429 || $status >= 500) {
             throw new TemporaryArchiveOrgException('Archive.org is temporarily unavailable.');
         }
 
