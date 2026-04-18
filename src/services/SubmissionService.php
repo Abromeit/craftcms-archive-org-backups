@@ -22,6 +22,10 @@ final class SubmissionService extends Component
 
     private const STALE_PENDING_RECOVERY_AGE = 1800;
 
+    // Matches the official Wayback Machine WordPress plugin's per-tick batch
+    // (iawmlf_scan_own_posts_per_call = 10).
+    private const BATCH_SIZE = 10;
+
     private ArchiveOrgClientInterface $client;
 
     public function init(): void
@@ -55,7 +59,7 @@ final class SubmissionService extends Component
             return 0;
         }
 
-        $limit = max(0, min(25, $quota->getRemainingBudget()));
+        $limit = max(0, min(self::BATCH_SIZE, $quota->getRemainingBudget()));
 
         if ($limit === 0) {
             return 0;
@@ -80,7 +84,7 @@ final class SubmissionService extends Component
     private function recoverStalePendingTargets(): void
     {
         $targets = ArchiveOrgBackups::plugin()->getTargets()->getStalePendingTargets(
-            25,
+            self::BATCH_SIZE,
             self::STALE_PENDING_RECOVERY_AGE
         );
 

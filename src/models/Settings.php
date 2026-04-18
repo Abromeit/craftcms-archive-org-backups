@@ -19,7 +19,7 @@ final class Settings extends Model
 
     public int $unchangedRefreshDays = 7;
 
-    public int $heartbeatIntervalMinutes = 15;
+    public int $heartbeatIntervalMinutes = 2;
 
     public function defineRules(): array
     {
