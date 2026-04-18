@@ -95,9 +95,13 @@ final class PublicArchiveOrgClient implements ArchiveOrgClientInterface
 
     public function getLatestCdxCapture(string $url): ?array
     {
+        // CDX returns captures chronologically ascending. `limit=-1` plus
+        // `fastLatest=true` asks for just the newest capture using the
+        // fast-latest index, instead of the oldest one in the window.
         $query = [
             'url' => $url,
-            'limit' => 1,
+            'limit' => -1,
+            'fastLatest' => 'true',
             'filter' => 'statuscode:200',
             'output' => 'json',
             'fl' => 'timestamp,original',

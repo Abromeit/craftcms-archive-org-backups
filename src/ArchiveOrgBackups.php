@@ -60,7 +60,7 @@ final class ArchiveOrgBackups extends Plugin
 
     public const PRIORITY_REFRESH = 100;
 
-    public string $schemaVersion = '1.0.0';
+    public string $schemaVersion = '1.1.0';
 
     public bool $hasCpSection = true;
 
