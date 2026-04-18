@@ -94,15 +94,8 @@ The snapshot viewing URL and the external-snapshot probe always hit
 
 ## Production-only outbound traffic
 
-As a hard safety net, the plugin only ever talks to Archive.org when Craft is
-running with `CRAFT_ENVIRONMENT=production`. On any other environment
-(staging, dev, local clones) the plugin will not enqueue heartbeats, will not
-submit URLs to Save Page Now, and will not probe Wayback for snapshots — even
-on a fresh install or when the Craft control panel is opened.
-
-Tracked targets are still discovered and shown in the dashboard, so you can
-review which URLs would be archived, but nothing leaves the server until
-`CRAFT_ENVIRONMENT` is set to `production`.
+The plugin only talks to Archive.org when `CRAFT_ENVIRONMENT=production`.
+On staging, dev, and local clones nothing is submitted.
 
 ## Queue Execution
 
