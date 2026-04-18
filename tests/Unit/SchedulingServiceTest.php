@@ -55,4 +55,11 @@ final class SchedulingServiceTest extends TestCase
             SchedulingService::selectLiveCandidate($rows)
         );
     }
+
+    public function testFirstConfirmationDelayRunsAfterThirtySeconds(): void
+    {
+        $delay = (new SchedulingService())->getConfirmationDelay(0);
+
+        self::assertSame(30, $delay);
+    }
 }

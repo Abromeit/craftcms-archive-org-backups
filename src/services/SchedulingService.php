@@ -90,8 +90,12 @@ final class SchedulingService extends Component
 
     public function getConfirmationDelay(int $attempt): int
     {
-        $delays = [1800, 7200, 21600, 43200, 86400];
+        $delays = [60, 300, 1800, 7200, 21600, 43200, 86400];
         $delay = $delays[$attempt] ?? 86400;
+
+        if ($attempt === 0) {
+            return 30;
+        }
 
         return $this->applyJitter($delay, 90);
     }
