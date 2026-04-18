@@ -227,10 +227,10 @@ final class IndexingService extends Component
                 try {
                     $capture = $this->client->getLatestAvailableSnapshot($target->url);
                 } catch (TemporaryArchiveOrgException $exception) {
-                    // Network blip, 429, 5xx: leave the row untouched so the
-                    // next heartbeat tick retries it, but log the failure so
-                    // it is visible in the attempts table instead of silently
-                    // starving the batch.
+                    // Archive.org signalled back-off (429/5xx/network). Log
+                    // the attempt and stop the batch: the remaining rows are
+                    // still unprobed (lastRemoteCheckAt is null), so the next
+                    // heartbeat tick picks them up once Wayback has drained.
                     ArchiveOrgBackups::plugin()->getTargets()->addAttempt(
                         (int) $target->id,
                         'external_probe',
@@ -240,7 +240,7 @@ final class IndexingService extends Component
                         null,
                         null
                     );
-                    continue;
+                    break;
                 } catch (ArchiveOrgException $exception) {
                     // Permanent protocol-level failure: stamp the row so we
                     // don't hammer a URL Archive.org cannot answer for.
