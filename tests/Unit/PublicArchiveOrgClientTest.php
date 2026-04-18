@@ -39,6 +39,18 @@ final class PublicArchiveOrgClientTest extends TestCase
         $service->getSaveStatus('job-123');
     }
 
+    public function testGetSaveStatusFailsOnInvalidJsonPayload(): void
+    {
+        $client = $this->createClient([
+            new Response(200, [], '<html>not json</html>'),
+        ]);
+
+        $service = new PublicArchiveOrgClient($client);
+
+        $this->expectException(InvalidArchiveOrgResponseException::class);
+        $service->getSaveStatus('job-123');
+    }
+
     /**
      * @param Response[] $responses
      */

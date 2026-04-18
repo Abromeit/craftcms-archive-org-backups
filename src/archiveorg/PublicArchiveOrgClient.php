@@ -10,6 +10,7 @@ use DateTimeZone;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\RequestOptions;
+use yii\base\InvalidArgumentException;
 use abromeit\archiveorgbackups\archiveorg\exceptions\InvalidArchiveOrgResponseException;
 use abromeit\archiveorgbackups\archiveorg\exceptions\QuotaExhaustedException;
 use abromeit\archiveorgbackups\archiveorg\exceptions\TemporaryArchiveOrgException;
@@ -144,7 +145,11 @@ final class PublicArchiveOrgClient implements ArchiveOrgClientInterface
             );
         }
 
-        $decoded = Json::decodeIfJson((string) $response->getBody());
+        try {
+            $decoded = Json::decode((string) $response->getBody());
+        } catch (InvalidArgumentException $exception) {
+            throw new InvalidArchiveOrgResponseException('Archive.org did not return valid JSON.', 0, $exception);
+        }
 
         if (!is_array($decoded)) {
             throw new InvalidArchiveOrgResponseException('Archive.org did not return valid JSON.');

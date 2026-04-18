@@ -141,6 +141,33 @@ final class TargetService extends Component
     }
 
     /**
+     * @return ArchiveTargetRecord[]
+     */
+    public function getStalePendingTargets(int $limit, int $ageSeconds): array
+    {
+        $cutoff = Db::prepareDateForDb(
+            (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))
+                ->modify('-' . max(0, $ageSeconds) . ' seconds')
+        );
+
+        /** @var ArchiveTargetRecord[] $rows */
+        $rows = ArchiveTargetRecord::find()
+            ->where(['isActive' => true])
+            ->andWhere(['lastJobStatus' => ArchiveOrgBackups::JOB_STATUS_PENDING])
+            ->andWhere(['not', ['lastJobId' => null]])
+            ->andWhere(['not', ['lastSubmittedAt' => null]])
+            ->andWhere(['<=', 'lastSubmittedAt', $cutoff])
+            ->orderBy([
+                'lastSubmittedAt' => SORT_ASC,
+                'id' => SORT_ASC,
+            ])
+            ->limit($limit)
+            ->all();
+
+        return $rows;
+    }
+
+    /**
      * @param int[] $ids
      * @return array<int, array{id:int, lastJobId:?string, lastRemoteCheckAt:?string}>
      */

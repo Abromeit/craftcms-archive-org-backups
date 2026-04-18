@@ -20,6 +20,8 @@ final class SubmissionService extends Component
 {
     private const LOCK_KEY = 'archive-org-backups:submit-due-targets';
 
+    private const STALE_PENDING_RECOVERY_AGE = 1800;
+
     private ArchiveOrgClientInterface $client;
 
     public function init(): void
@@ -45,6 +47,8 @@ final class SubmissionService extends Component
 
     private function processDueTargetsInternal(): int
     {
+        $this->recoverStalePendingTargets();
+
         $quota = ArchiveOrgBackups::plugin()->getQuota();
 
         if ($quota->isQuotaExhausted()) {
@@ -71,6 +75,27 @@ final class SubmissionService extends Component
         }
 
         return $submitted;
+    }
+
+    private function recoverStalePendingTargets(): void
+    {
+        $targets = ArchiveOrgBackups::plugin()->getTargets()->getStalePendingTargets(
+            25,
+            self::STALE_PENDING_RECOVERY_AGE
+        );
+
+        foreach ($targets as $target) {
+            if ($target->lastJobId === null) {
+                continue;
+            }
+
+            Craft::$app->getQueue()
+                ->push(new PollSubmissionStatusJob([
+                    'targetId' => (int) $target->id,
+                    'attempt' => 0,
+                    'expectedJobId' => $target->lastJobId,
+                ]));
+        }
     }
 
     public function submitTarget(ArchiveTargetRecord $target): bool
