@@ -168,6 +168,67 @@ final class TargetService extends Component
     }
 
     /**
+     * Returns targets that have never been submitted by us AND have never been
+     * probed against Archive.org's CDX yet. Used to one-shot backfill the
+     * "Last Submission" column with any pre-existing third-party snapshot.
+     *
+     * @return ArchiveTargetRecord[]
+     */
+    public function getExternalProbeCandidates(int $limit): array
+    {
+        /** @var ArchiveTargetRecord[] $rows */
+        $rows = ArchiveTargetRecord::find()
+            ->where(['isActive' => true])
+            ->andWhere(['lastSubmittedAt' => null])
+            ->andWhere(['lastRemoteCheckAt' => null])
+            ->orderBy(['id' => SORT_ASC])
+            ->limit($limit)
+            ->all();
+
+        return $rows;
+    }
+
+
+    /**
+     * Records the outcome of an external snapshot probe. A hit writes the
+     * snapshot data; a miss only stamps `lastRemoteCheckAt` so the row is
+     * permanently excluded from future probe batches.
+     *
+     * @param  ArchiveTargetRecord $record      - Target being probed.
+     * @param  ?string             $timestamp   - CDX YmdHis, or null on miss.
+     * @param  ?string             $snapshotUrl - Wayback URL, or null on miss.
+     *
+     * @return void
+     */
+    public function updateExternalProbeResult(
+        ArchiveTargetRecord $record,
+        ?string $timestamp,
+        ?string $snapshotUrl
+    ): void {
+        $record->lastRemoteCheckAt = Db::prepareDateForDb(new \DateTimeImmutable('now', new \DateTimeZone('UTC')));
+
+        if ($timestamp !== null && $snapshotUrl !== null) {
+            $record->lastSnapshotTimestamp = $timestamp;
+            $record->lastSnapshotUrl = $snapshotUrl;
+        }
+
+        $record->save(false);
+
+        $this->addAttempt(
+            (int) $record->id,
+            'external_probe',
+            $timestamp !== null ? 'found' : 'none',
+            null,
+            null,
+            null,
+            $timestamp !== null
+                ? Json::encode(['timestamp' => $timestamp, 'snapshotUrl' => $snapshotUrl])
+                : null
+        );
+    }
+
+
+    /**
      * @param int[] $ids
      * @return array<int, array{id:int, lastJobId:?string, lastRemoteCheckAt:?string}>
      */
@@ -391,12 +452,22 @@ final class TargetService extends Component
         $result = [];
 
         foreach ($rows as $row) {
+            $isExternalSnapshot = $row->lastSubmittedAt === null
+                && $row->lastSnapshotTimestamp !== null;
+
+            $lastSubmissionLabel = null;
+
+            if ($row->lastSubmittedAt !== null) {
+                $lastSubmissionLabel = Craft::$app->getFormatter()->asDatetime($row->lastSubmittedAt);
+            } elseif ($isExternalSnapshot) {
+                $lastSubmissionLabel = Craft::$app->getFormatter()
+                    ->asDatetime(self::cdxTimestampToDatetime($row->lastSnapshotTimestamp));
+            }
+
             $result[] = [
                 'id' => (int) $row->id,
                 'url' => $row->url,
-                'lastSubmissionLabel' => $row->lastSubmittedAt
-                    ? Craft::$app->getFormatter()->asDatetime($row->lastSubmittedAt)
-                    : null,
+                'lastSubmissionLabel' => $lastSubmissionLabel,
                 'lastSnapshotUrl' => $row->lastSnapshotUrl,
                 'nextSubmissionLabel' => $row->nextSubmissionAt
                     ? Craft::$app->getFormatter()->asDatetime($row->nextSubmissionAt)
@@ -404,6 +475,7 @@ final class TargetService extends Component
                 'statusLabel' => $this->statusLabel($row),
                 'hasSnapshotUrl' => $row->lastSnapshotUrl !== null && $row->lastSnapshotUrl !== '',
                 'isIndexed' => $row->indexingStatus === ArchiveOrgBackups::INDEXING_INDEXED,
+                'isExternalSnapshot' => $isExternalSnapshot,
             ];
         }
 
@@ -548,6 +620,26 @@ final class TargetService extends Component
     {
         return $siteId . ':' . $url;
     }
+
+    /**
+     * Converts an Archive.org CDX YmdHis timestamp (UTC) into a DateTimeImmutable
+     * for display formatting. Returns null on malformed input.
+     *
+     * @param  ?string $timestamp - 14-character CDX timestamp.
+     *
+     * @return ?\DateTimeImmutable
+     */
+    public static function cdxTimestampToDatetime(?string $timestamp): ?\DateTimeImmutable
+    {
+        if ($timestamp === null || !preg_match('/^\d{14}$/', $timestamp)) {
+            return null;
+        }
+
+        $date = \DateTimeImmutable::createFromFormat('YmdHis', $timestamp, new \DateTimeZone('UTC'));
+
+        return $date instanceof \DateTimeImmutable ? $date : null;
+    }
+
 
     public static function statusLabelKey(?string $lastJobStatus, string $indexingStatus): string
     {

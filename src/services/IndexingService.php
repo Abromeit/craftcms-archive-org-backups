@@ -23,6 +23,12 @@ final class IndexingService extends Component
 
     private const MAX_CONFIRMATION_ATTEMPTS = 10;
 
+    // Mirrors SubmissionService::BATCH_SIZE to keep CDX pacing aligned with
+    // the existing per-heartbeat throttle used for SPN submissions.
+    private const EXTERNAL_PROBE_BATCH_SIZE = 10;
+
+    private const EXTERNAL_PROBE_LOCK_KEY = 'archive-org-backups:probe-external-snapshots';
+
     private ArchiveOrgClientInterface $client;
 
     public static function isSnapshotCurrent(?string $submittedAt, ?string $cdxTimestamp): bool
@@ -190,6 +196,65 @@ final class IndexingService extends Component
 
         return $indexed;
     }
+
+    /**
+     * Processes up to EXTERNAL_PROBE_BATCH_SIZE never-submitted, never-probed
+     * targets by asking Archive.org's CDX for any pre-existing snapshot. Each
+     * target is probed exactly once: a hit populates `lastSnapshotTimestamp`
+     * and `lastSnapshotUrl`; a miss only stamps `lastRemoteCheckAt`, which
+     * permanently excludes the row from future batches.
+     *
+     * Pacing matches SubmitDueTargetsJob: a single mutex-guarded batch per
+     * heartbeat tick, self-stopping once the backlog is drained.
+     *
+     * @return int
+     */
+    public function probeExternalSnapshotBatch(): int
+    {
+        $mutex = Craft::$app->getMutex();
+
+        if (!$mutex->acquire(self::EXTERNAL_PROBE_LOCK_KEY, 0)) {
+            return 0;
+        }
+
+        try {
+            $candidates = ArchiveOrgBackups::plugin()->getTargets()
+                ->getExternalProbeCandidates(self::EXTERNAL_PROBE_BATCH_SIZE);
+
+            $processed = 0;
+
+            foreach ($candidates as $target) {
+                try {
+                    $cdx = $this->client->getLatestCdxCapture($target->url);
+                } catch (TemporaryArchiveOrgException) {
+                    // Network blip, 429, 5xx: leave the row untouched so the
+                    // next heartbeat tick retries it.
+                    continue;
+                } catch (ArchiveOrgException) {
+                    // Permanent protocol-level failure: stamp the row so we
+                    // don't hammer a URL CDX cannot answer for.
+                    ArchiveOrgBackups::plugin()->getTargets()->updateExternalProbeResult($target, null, null);
+                    ++$processed;
+                    continue;
+                }
+
+                $timestamp = $cdx['timestamp'] ?? null;
+                $snapshotUrl = self::snapshotUrlFromCapture($timestamp, $cdx['original'] ?? null);
+
+                ArchiveOrgBackups::plugin()->getTargets()->updateExternalProbeResult(
+                    $target,
+                    $timestamp,
+                    $snapshotUrl
+                );
+                ++$processed;
+            }
+
+            return $processed;
+        } finally {
+            $mutex->release(self::EXTERNAL_PROBE_LOCK_KEY);
+        }
+    }
+
 
     public function scheduleStatusPoll(int $targetId, int $attempt, int $delayAttempt, string $expectedJobId): void
     {

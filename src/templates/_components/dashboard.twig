@@ -46,7 +46,7 @@
                             <td><a href="{{ row.url }}" target="_blank" rel="noopener">{{ row.url }}</a></td>
                             <td>
                                 {% if row.lastSubmissionLabel %}
-                                    <span class="aob-status">
+                                    <span class="aob-status{% if row.isExternalSnapshot %} aob-status--external{% endif %}">
                                         {% if row.hasSnapshotUrl %}
                                             <a href="{{ row.lastSnapshotUrl }}" target="_blank" rel="noopener">
                                                 {{ row.lastSubmissionLabel }}
@@ -63,6 +63,17 @@
                                                 <span class="aob-check__trigger" aria-hidden="true">✓</span>
                                                 <span class="aob-check__tip" role="tooltip">
                                                     {{ 'Indexing by archive.org is complete for this snapshot.'|t('archive-org-backups') }}
+                                                </span>
+                                            </span>
+                                        {% elseif row.isExternalSnapshot %}
+                                            <span
+                                                class="aob-check"
+                                                tabindex="0"
+                                                aria-label="{{ 'Third-party snapshot'|t('archive-org-backups') }}"
+                                            >
+                                                <span class="aob-check__trigger" aria-hidden="true">~</span>
+                                                <span class="aob-check__tip" role="tooltip">
+                                                    {{ 'This snapshot was not submitted by this plugin. It was already available on archive.org.'|t('archive-org-backups') }}
                                                 </span>
                                             </span>
                                         {% endif %}

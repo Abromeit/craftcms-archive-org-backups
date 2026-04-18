@@ -95,6 +95,12 @@
     white-space: nowrap;
 }
 
+.aob-status--external a,
+.aob-status--external {
+    color: #526277;
+    font-style: italic;
+}
+
 .aob-check {
     position: relative;
     display: inline-flex;

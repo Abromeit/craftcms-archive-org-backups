@@ -8,6 +8,7 @@ use Craft;
 use craft\base\Component;
 use abromeit\archiveorgbackups\ArchiveOrgBackups;
 use abromeit\archiveorgbackups\jobs\HeartbeatJob;
+use abromeit\archiveorgbackups\jobs\ProbeExternalSnapshotsJob;
 use abromeit\archiveorgbackups\jobs\SubmitDueTargetsJob;
 use abromeit\archiveorgbackups\jobs\SyncTargetsJob;
 
@@ -76,6 +77,7 @@ final class HeartbeatService extends Component
             $cache->set(self::LAST_RUN_CACHE_KEY, $now, 120);
             Craft::$app->getQueue()->push(new SyncTargetsJob());
             Craft::$app->getQueue()->push(new SubmitDueTargetsJob());
+            Craft::$app->getQueue()->push(new ProbeExternalSnapshotsJob());
             $this->scheduleHeartbeat($this->getInterval(), $now);
         } finally {
             $mutex->release(self::LOCK_KEY);
