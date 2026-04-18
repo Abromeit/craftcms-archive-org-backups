@@ -86,9 +86,9 @@ final class ArchiveOrgBackups extends Plugin
      *
      *   - Craft runs with CRAFT_ENVIRONMENT=production, and
      *   - the primary site's base URL does not look like a local dev host
-     *     (`localhost`, `*.local`, or `*.test`), unless an
-     *     `ARCHIVEORG_BACKUPS_*_BASE_URL` override is set (which redirects
-     *     traffic to a mock server).
+     *     (`localhost`, `*.local`, `*.test`, or a loopback IP such as
+     *     `127.0.0.1` / `::1`), unless an `ARCHIVEORG_BACKUPS_*_BASE_URL`
+     *     override is set (which redirects traffic to a mock server).
      *
      * @return bool
      */
@@ -130,7 +130,25 @@ final class ArchiveOrgBackups extends Plugin
             return true;
         }
 
-        return str_ends_with($host, '.local') || str_ends_with($host, '.test');
+        if (str_ends_with($host, '.local') || str_ends_with($host, '.test')) {
+            return true;
+        }
+
+        // Bracketed IPv6 literals come through parse_url() as e.g. "[::1]".
+        $ipHost = (str_starts_with($host, '[') && str_ends_with($host, ']'))
+            ? substr($host, 1, -1)
+            : $host;
+
+        if (filter_var($ipHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+            // 127.0.0.0/8 is the IPv4 loopback range.
+            return str_starts_with($ipHost, '127.');
+        }
+
+        if (filter_var($ipHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
+            return inet_pton($ipHost) === inet_pton('::1');
+        }
+
+        return false;
     }
 
 

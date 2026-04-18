@@ -95,9 +95,10 @@ The snapshot viewing URL and the external-snapshot probe always hit
 ## Production-only outbound traffic
 
 The plugin only talks to Archive.org when `CRAFT_ENVIRONMENT=production` and
-the primary site's base URL is not a local host (`localhost`, `*.local`, or
-`*.test`). On local setups an `ARCHIVEORG_BACKUPS_*_BASE_URL` override (see
-below) re-enables outbound traffic so you can point it at a mock server.
+the primary site's base URL is not a local host (`localhost`, `*.local`,
+`*.test`, or a loopback IP like `127.0.0.1` / `::1`). On local setups an
+`ARCHIVEORG_BACKUPS_*_BASE_URL` override (see below) re-enables outbound
+traffic so you can point it at a mock server.
 
 ## Queue Execution
 
