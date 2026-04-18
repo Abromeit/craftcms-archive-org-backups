@@ -17,14 +17,9 @@ interface ArchiveOrgClientInterface
     public function getSaveStatus(string $jobId): array;
 
     /**
-     * @return array{timestamp:string, original:string}|null
-     */
-    public function getLatestCdxCapture(string $url): ?array;
-
-    /**
      * Fast "is this URL archived, and when?" lookup via Wayback's
-     * `/web/2/<url>` redirect endpoint. Much faster than CDX for one-shot
-     * probes.
+     * `/web/9999/<url>` latest-capture redirect endpoint. Much faster than
+     * `/cdx/search/cdx` for a one-shot probe.
      *
      * @return array{timestamp:string, original:string}|null
      */

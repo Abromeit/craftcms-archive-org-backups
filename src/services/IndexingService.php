@@ -165,7 +165,7 @@ final class IndexingService extends Component
         }
 
         try {
-            $cdx = $this->client->getLatestCdxCapture($target->url);
+            $capture = $this->client->getLatestAvailableSnapshot($target->url);
         } catch (TemporaryArchiveOrgException) {
             if (!$liveWatch) {
                 $this->scheduleConfirmation($targetId, $attempt + 1, $target->lastJobId);
@@ -178,16 +178,16 @@ final class IndexingService extends Component
             return false;
         }
 
-        $cdxTimestamp = $cdx['timestamp'] ?? null;
-        $snapshotUrl = self::snapshotUrlFromCapture($cdxTimestamp, $cdx['original'] ?? null);
-        $indexed = self::isSnapshotCurrent($target->lastSubmittedAt, $cdxTimestamp);
+        $captureTimestamp = $capture['timestamp'] ?? null;
+        $snapshotUrl = self::snapshotUrlFromCapture($captureTimestamp, $capture['original'] ?? null);
+        $indexed = self::isSnapshotCurrent($target->lastSubmittedAt, $captureTimestamp);
 
         ArchiveOrgBackups::plugin()->getTargets()->updateIndexingResult(
             $target,
             $indexed,
-            $cdxTimestamp,
+            $captureTimestamp,
             $snapshotUrl ?? $target->lastSnapshotUrl,
-            $indexed ? null : 'Archive.org has not exposed the snapshot via CDX yet.'
+            $indexed ? null : 'Archive.org has not exposed the snapshot yet.'
         );
 
         if (!$indexed && !$liveWatch) {

@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace abromeit\archiveorgbackups\archiveorg;
 
-use Craft;
-use DateTimeImmutable;
-use DateTimeZone;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\RequestOptions;
@@ -91,32 +88,6 @@ final class PublicArchiveOrgClient implements ArchiveOrgClientInterface
             'message' => isset($payload['message']) ? (string) $payload['message'] : '',
             'statusExt' => isset($payload['status_ext']) ? (string) $payload['status_ext'] : null,
         ];
-    }
-
-    public function getLatestCdxCapture(string $url): ?array
-    {
-        // CDX returns captures chronologically ascending. `limit=-1` plus
-        // `fastLatest=true` asks for just the newest capture using the
-        // fast-latest index, instead of the oldest one in the window.
-        $query = [
-            'url' => $url,
-            'limit' => -1,
-            'fastLatest' => 'true',
-            'filter' => 'statuscode:200',
-            'output' => 'json',
-            'fl' => 'timestamp,original',
-            'from' => (new DateTimeImmutable('-1 year', new DateTimeZone(Craft::$app->getTimeZone())))
-                ->format('Y'),
-        ];
-
-        $payload = $this->requestJson(ArchiveOrgEndpoints::cdxUrl($query));
-
-        if (!is_array($payload)) {
-            throw new InvalidArchiveOrgResponseException('Archive.org CDX payload is invalid.');
-        }
-
-        /** @var array<int, array<int, string>> $payload */
-        return ArchiveOrgParser::extractLatestCdxCapture($payload);
     }
 
     public function getLatestAvailableSnapshot(string $url): ?array

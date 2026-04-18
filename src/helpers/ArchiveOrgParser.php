@@ -27,9 +27,9 @@ final class ArchiveOrgParser
     }
 
     /**
-     * Reads the snapshot timestamp from Wayback's `/web/2/<url>` 302 response.
-     * Prefers the explicit `x-archive-redirect-reason` header, falls back to
-     * parsing the timestamp out of the `location` URL.
+     * Reads the snapshot timestamp from Wayback's `/web/9999/<url>` 302
+     * response. Prefers the explicit `x-archive-redirect-reason` header,
+     * falls back to parsing the timestamp out of the `location` URL.
      *
      * @param  string $reasonHeader   - Value of the `x-archive-redirect-reason` header.
      * @param  string $locationHeader - Value of the `location` header.
@@ -55,30 +55,5 @@ final class ArchiveOrgParser
         }
 
         return null;
-    }
-
-
-    /**
-     * @param array<int, array<int, string>> $payload
-     * @return array{timestamp:string, original:string}|null
-     */
-    public static function extractLatestCdxCapture(array $payload): ?array
-    {
-        if (!isset($payload[1]) || !is_array($payload[1])) {
-            return null;
-        }
-
-        $row = $payload[1];
-        $timestamp = $row[0] ?? '';
-        $original = $row[1] ?? '';
-
-        if ($timestamp === '' || $original === '') {
-            return null;
-        }
-
-        return [
-            'timestamp' => $timestamp,
-            'original' => $original,
-        ];
     }
 }

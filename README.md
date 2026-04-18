@@ -81,14 +81,16 @@ Or override individual endpoint bases:
 ```dotenv
 ARCHIVEORG_BACKUPS_SAVE_BASE_URL="http://127.0.0.1:8080"
 ARCHIVEORG_BACKUPS_SAVE_STATUS_BASE_URL="http://127.0.0.1:8080"
-ARCHIVEORG_BACKUPS_CDX_BASE_URL="http://127.0.0.1:8080"
 ```
 
 Defaults:
 
 - `ARCHIVEORG_BACKUPS_SAVE_BASE_URL` -> `https://web.archive.org`
 - `ARCHIVEORG_BACKUPS_SAVE_STATUS_BASE_URL` -> `https://web-wp.archive.org`
-- `ARCHIVEORG_BACKUPS_CDX_BASE_URL` -> `https://web.archive.org`
+
+The snapshot viewing URL and the external-snapshot probe always hit
+`https://web.archive.org`, and can only be redirected via the global
+`ARCHIVEORG_BACKUPS_BASE_URL`.
 
 ## Queue Execution
 

@@ -14,8 +14,6 @@ final class ArchiveOrgEndpoints
 
     public const SAVE_STATUS_BASE_URL_ENV = 'ARCHIVEORG_BACKUPS_SAVE_STATUS_BASE_URL';
 
-    public const CDX_BASE_URL_ENV = 'ARCHIVEORG_BACKUPS_CDX_BASE_URL';
-
     public static function saveUrl(): string
     {
         return self::baseUrl(self::SAVE_BASE_URL_ENV, 'https://web.archive.org') . '/save/';
@@ -27,15 +25,9 @@ final class ArchiveOrgEndpoints
             . '/save/status/' . rawurlencode($jobId);
     }
 
-    public static function cdxUrl(array $query): string
-    {
-        return self::baseUrl(self::CDX_BASE_URL_ENV, 'https://web.archive.org')
-            . '/cdx/search/cdx?' . http_build_query($query);
-    }
-
     public static function snapshotUrl(string $timestamp, string $original): string
     {
-        return self::baseUrl(self::CDX_BASE_URL_ENV, 'https://web.archive.org')
+        return self::baseUrl(null, 'https://web.archive.org')
             . '/web/' . rawurlencode($timestamp) . '/' . $original;
     }
 
@@ -51,11 +43,11 @@ final class ArchiveOrgEndpoints
      */
     public static function latestCaptureUrl(string $url): string
     {
-        return self::baseUrl(self::CDX_BASE_URL_ENV, 'https://web.archive.org')
+        return self::baseUrl(null, 'https://web.archive.org')
             . '/web/9999/' . $url;
     }
 
-    private static function baseUrl(string $specificEnv, string $default): string
+    private static function baseUrl(?string $specificEnv, string $default): string
     {
         $global = self::env(self::GLOBAL_BASE_URL_ENV);
 
@@ -63,10 +55,12 @@ final class ArchiveOrgEndpoints
             return $global;
         }
 
-        $specific = self::env($specificEnv);
+        if ($specificEnv !== null) {
+            $specific = self::env($specificEnv);
 
-        if ($specific !== null) {
-            return $specific;
+            if ($specific !== null) {
+                return $specific;
+            }
         }
 
         return rtrim($default, '/');

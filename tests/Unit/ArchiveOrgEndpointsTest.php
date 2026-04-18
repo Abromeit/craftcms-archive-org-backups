@@ -14,7 +14,6 @@ final class ArchiveOrgEndpointsTest extends TestCase
         putenv(ArchiveOrgEndpoints::GLOBAL_BASE_URL_ENV);
         putenv(ArchiveOrgEndpoints::SAVE_BASE_URL_ENV);
         putenv(ArchiveOrgEndpoints::SAVE_STATUS_BASE_URL_ENV);
-        putenv(ArchiveOrgEndpoints::CDX_BASE_URL_ENV);
 
         parent::tearDown();
     }
@@ -32,12 +31,22 @@ final class ArchiveOrgEndpointsTest extends TestCase
             'http://127.0.0.1:8080/save/status/job-123',
             ArchiveOrgEndpoints::saveStatusUrl('job-123')
         );
+
+        self::assertSame(
+            'http://127.0.0.1:8080/web/20260417120000/https://example.com/',
+            ArchiveOrgEndpoints::snapshotUrl('20260417120000', 'https://example.com/')
+        );
+
+        self::assertSame(
+            'http://127.0.0.1:8080/web/9999/https://example.com/',
+            ArchiveOrgEndpoints::latestCaptureUrl('https://example.com/')
+        );
     }
 
     public function testSpecificOverridesCanBeSetIndividually(): void
     {
         putenv(ArchiveOrgEndpoints::SAVE_BASE_URL_ENV . '=http://save.local/');
-        putenv(ArchiveOrgEndpoints::CDX_BASE_URL_ENV . '=http://cdx.local/');
+        putenv(ArchiveOrgEndpoints::SAVE_STATUS_BASE_URL_ENV . '=http://status.local/');
 
         self::assertSame(
             'http://save.local/save/',
@@ -45,16 +54,21 @@ final class ArchiveOrgEndpointsTest extends TestCase
         );
 
         self::assertSame(
-            'http://cdx.local/cdx/search/cdx?url=https%3A%2F%2Fexample.com&limit=1',
-            ArchiveOrgEndpoints::cdxUrl([
-                'url' => 'https://example.com',
-                'limit' => 1,
-            ])
+            'http://status.local/save/status/job-123',
+            ArchiveOrgEndpoints::saveStatusUrl('job-123')
+        );
+    }
+
+    public function testSnapshotAndLatestCaptureDefaultToWayback(): void
+    {
+        self::assertSame(
+            'https://web.archive.org/web/20260417120000/https://example.com/',
+            ArchiveOrgEndpoints::snapshotUrl('20260417120000', 'https://example.com/')
         );
 
         self::assertSame(
-            'http://cdx.local/web/20260417120000/https://example.com/',
-            ArchiveOrgEndpoints::snapshotUrl('20260417120000', 'https://example.com/')
+            'https://web.archive.org/web/9999/https://example.com/',
+            ArchiveOrgEndpoints::latestCaptureUrl('https://example.com/')
         );
     }
 }
