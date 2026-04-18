@@ -102,7 +102,21 @@ final class SchedulingService extends Component
 
     public function getStatusPollDelay(int $attempt): int
     {
-        $delays = [600, 1200, 1800, 3600];
+        // Each entry is the delay after the previous poll, producing a total
+        // schedule of 30 seconds, 60 seconds, 5 minutes, 10 minutes,
+        // 15 minutes, 30 minutes, 45 minutes, and 60 minutes after
+        // submission, then hourly.
+        $delays = [
+            30,
+            30,
+            240,
+            300,
+            300,
+            900,
+            900,
+            900,
+            3600,
+        ];
         $delay = $delays[$attempt] ?? 3600;
 
         return $this->applyJitter($delay, 30);

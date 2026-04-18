@@ -62,4 +62,68 @@ final class SchedulingServiceTest extends TestCase
 
         self::assertSame(30, $delay);
     }
+
+    public function testFirstStatusPollRunsAboutThirtySecondsAfterSubmission(): void
+    {
+        $delay = (new SchedulingService())->getStatusPollDelay(0);
+
+        self::assertGreaterThanOrEqual(30, $delay);
+        self::assertLessThanOrEqual(60, $delay);
+    }
+
+    public function testSecondStatusPollRunsAboutSixtySecondsAfterSubmission(): void
+    {
+        $delay = (new SchedulingService())->getStatusPollDelay(1);
+
+        self::assertGreaterThanOrEqual(30, $delay);
+        self::assertLessThanOrEqual(60, $delay);
+    }
+
+    public function testThirdStatusPollRunsAboutFiveMinutesAfterSubmission(): void
+    {
+        $delay = (new SchedulingService())->getStatusPollDelay(2);
+
+        self::assertGreaterThanOrEqual(240, $delay);
+        self::assertLessThanOrEqual(270, $delay);
+    }
+
+    public function testFourthStatusPollRunsAboutTenMinutesAfterSubmission(): void
+    {
+        $delay = (new SchedulingService())->getStatusPollDelay(3);
+
+        self::assertGreaterThanOrEqual(300, $delay);
+        self::assertLessThanOrEqual(330, $delay);
+    }
+
+    public function testFifthStatusPollRunsAboutFifteenMinutesAfterSubmission(): void
+    {
+        $delay = (new SchedulingService())->getStatusPollDelay(4);
+
+        self::assertGreaterThanOrEqual(300, $delay);
+        self::assertLessThanOrEqual(330, $delay);
+    }
+
+    public function testSixthStatusPollRunsAboutThirtyMinutesAfterSubmission(): void
+    {
+        $delay = (new SchedulingService())->getStatusPollDelay(5);
+
+        self::assertGreaterThanOrEqual(900, $delay);
+        self::assertLessThanOrEqual(930, $delay);
+    }
+
+    public function testSeventhStatusPollRunsAboutFortyFiveMinutesAfterSubmission(): void
+    {
+        $delay = (new SchedulingService())->getStatusPollDelay(6);
+
+        self::assertGreaterThanOrEqual(900, $delay);
+        self::assertLessThanOrEqual(930, $delay);
+    }
+
+    public function testEighthStatusPollRunsAboutSixtyMinutesAfterSubmission(): void
+    {
+        $delay = (new SchedulingService())->getStatusPollDelay(7);
+
+        self::assertGreaterThanOrEqual(900, $delay);
+        self::assertLessThanOrEqual(930, $delay);
+    }
 }
