@@ -11,12 +11,14 @@ use craft\console\Application as ConsoleApplication;
 use craft\events\ElementEvent;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\events\RegisterUrlRulesEvent;
+use craft\helpers\App;
 use craft\helpers\UrlHelper;
 use craft\helpers\ElementHelper;
 use craft\services\Elements;
 use craft\web\UrlManager;
 use craft\web\View;
 use yii\base\Event;
+use abromeit\archiveorgbackups\archiveorg\ArchiveOrgEndpoints;
 use abromeit\archiveorgbackups\jobs\SubmitDueTargetsJob;
 use abromeit\archiveorgbackups\jobs\SyncTargetsJob;
 use abromeit\archiveorgbackups\models\Settings;
@@ -79,16 +81,76 @@ final class ArchiveOrgBackups extends Plugin
 
 
     /**
-     * Hard gate for all outbound Archive.org traffic: the plugin only ever
-     * enqueues or performs work against Save Page Now / Wayback when Craft is
-     * running with CRAFT_ENVIRONMENT=production. Staging / dev / local clones
-     * must never submit URLs or probe snapshots, even after a fresh install.
+     * Hard gate for all outbound Archive.org traffic. The plugin only ever
+     * enqueues or performs work against Save Page Now / Wayback when:
+     *
+     *   - Craft runs with CRAFT_ENVIRONMENT=production, and
+     *   - the primary site's base URL does not look like a local dev host
+     *     (`localhost`, `*.local`, or `*.test`), unless an
+     *     `ARCHIVEORG_BACKUPS_*_BASE_URL` override is set (which redirects
+     *     traffic to a mock server).
      *
      * @return bool
      */
     public static function isOutboundEnabled(): bool
     {
-        return Craft::$app->env === 'production';
+        if (Craft::$app->env !== 'production') {
+            return false;
+        }
+
+        if (self::hasLocalPrimarySiteUrl() && !self::hasEndpointOverride()) {
+            return false;
+        }
+
+        return true;
+    }
+
+
+    private static function hasLocalPrimarySiteUrl(): bool
+    {
+        try {
+            $baseUrl = Craft::$app->getSites()->getPrimarySite()->getBaseUrl();
+        } catch (\Throwable) {
+            return false;
+        }
+
+        if (!is_string($baseUrl) || $baseUrl === '') {
+            return false;
+        }
+
+        $host = parse_url($baseUrl, PHP_URL_HOST);
+
+        if (!is_string($host) || $host === '') {
+            return false;
+        }
+
+        $host = strtolower($host);
+
+        if ($host === 'localhost') {
+            return true;
+        }
+
+        return str_ends_with($host, '.local') || str_ends_with($host, '.test');
+    }
+
+
+    private static function hasEndpointOverride(): bool
+    {
+        $envNames = [
+            ArchiveOrgEndpoints::GLOBAL_BASE_URL_ENV,
+            ArchiveOrgEndpoints::SAVE_BASE_URL_ENV,
+            ArchiveOrgEndpoints::SAVE_STATUS_BASE_URL_ENV,
+        ];
+
+        foreach ($envNames as $envName) {
+            $value = App::parseEnv('$' . $envName);
+
+            if (is_string($value) && trim($value) !== '') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function init(): void
