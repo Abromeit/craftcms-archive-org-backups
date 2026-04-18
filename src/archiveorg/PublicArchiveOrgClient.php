@@ -119,6 +119,51 @@ final class PublicArchiveOrgClient implements ArchiveOrgClientInterface
         return ArchiveOrgParser::extractLatestCdxCapture($payload);
     }
 
+    public function getLatestAvailableSnapshot(string $url): ?array
+    {
+        try {
+            $response = $this->client->head(ArchiveOrgEndpoints::latestCaptureUrl($url), [
+                RequestOptions::ALLOW_REDIRECTS => false,
+                RequestOptions::TIMEOUT => 15,
+                RequestOptions::CONNECT_TIMEOUT => 10,
+            ]);
+        } catch (GuzzleException $exception) {
+            throw new TemporaryArchiveOrgException($exception->getMessage(), 0, $exception);
+        }
+
+        $status = $response->getStatusCode();
+
+        if ($status === 404) {
+            return null;
+        }
+
+        if ($status === 429 || $status >= 500) {
+            throw new TemporaryArchiveOrgException('Archive.org is temporarily unavailable.');
+        }
+
+        if ($status !== 301 && $status !== 302) {
+            throw new InvalidArchiveOrgResponseException(
+                'Unexpected Archive.org status ' . $status . ' from /web/2/ lookup.'
+            );
+        }
+
+        $timestamp = ArchiveOrgParser::extractTimestampFromRedirect(
+            $response->getHeaderLine('X-Archive-Redirect-Reason'),
+            $response->getHeaderLine('Location')
+        );
+
+        if ($timestamp === null) {
+            throw new InvalidArchiveOrgResponseException(
+                'Archive.org did not return a recognisable snapshot timestamp.'
+            );
+        }
+
+        return [
+            'timestamp' => $timestamp,
+            'original' => $url,
+        ];
+    }
+
     /**
      * @return array<mixed>
      */

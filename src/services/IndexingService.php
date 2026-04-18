@@ -225,21 +225,32 @@ final class IndexingService extends Component
 
             foreach ($candidates as $target) {
                 try {
-                    $cdx = $this->client->getLatestCdxCapture($target->url);
-                } catch (TemporaryArchiveOrgException) {
+                    $capture = $this->client->getLatestAvailableSnapshot($target->url);
+                } catch (TemporaryArchiveOrgException $exception) {
                     // Network blip, 429, 5xx: leave the row untouched so the
-                    // next heartbeat tick retries it.
+                    // next heartbeat tick retries it, but log the failure so
+                    // it is visible in the attempts table instead of silently
+                    // starving the batch.
+                    ArchiveOrgBackups::plugin()->getTargets()->addAttempt(
+                        (int) $target->id,
+                        'external_probe',
+                        'temporary',
+                        $exception->getMessage(),
+                        null,
+                        null,
+                        null
+                    );
                     continue;
-                } catch (ArchiveOrgException) {
+                } catch (ArchiveOrgException $exception) {
                     // Permanent protocol-level failure: stamp the row so we
-                    // don't hammer a URL CDX cannot answer for.
+                    // don't hammer a URL Archive.org cannot answer for.
                     ArchiveOrgBackups::plugin()->getTargets()->updateExternalProbeResult($target, null, null);
                     ++$processed;
                     continue;
                 }
 
-                $timestamp = $cdx['timestamp'] ?? null;
-                $snapshotUrl = self::snapshotUrlFromCapture($timestamp, $cdx['original'] ?? null);
+                $timestamp = $capture['timestamp'] ?? null;
+                $snapshotUrl = self::snapshotUrlFromCapture($timestamp, $capture['original'] ?? null);
 
                 ArchiveOrgBackups::plugin()->getTargets()->updateExternalProbeResult(
                     $target,

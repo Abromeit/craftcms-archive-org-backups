@@ -27,6 +27,38 @@ final class ArchiveOrgParser
     }
 
     /**
+     * Reads the snapshot timestamp from Wayback's `/web/2/<url>` 302 response.
+     * Prefers the explicit `x-archive-redirect-reason` header, falls back to
+     * parsing the timestamp out of the `location` URL.
+     *
+     * @param  string $reasonHeader   - Value of the `x-archive-redirect-reason` header.
+     * @param  string $locationHeader - Value of the `location` header.
+     *
+     * @return ?string
+     */
+    public static function extractTimestampFromRedirect(
+        string $reasonHeader,
+        string $locationHeader
+    ): ?string {
+        if (
+            $reasonHeader !== ''
+            && preg_match('/found capture at (\d{14})/', $reasonHeader, $matches) === 1
+        ) {
+            return $matches[1];
+        }
+
+        if (
+            $locationHeader !== ''
+            && preg_match('#/web/(\d{14})/#', $locationHeader, $matches) === 1
+        ) {
+            return $matches[1];
+        }
+
+        return null;
+    }
+
+
+    /**
      * @param array<int, array<int, string>> $payload
      * @return array{timestamp:string, original:string}|null
      */

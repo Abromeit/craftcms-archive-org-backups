@@ -39,6 +39,22 @@ final class ArchiveOrgEndpoints
             . '/web/' . rawurlencode($timestamp) . '/' . $original;
     }
 
+    /**
+     * Wayback "latest capture" redirect endpoint. Returns a 302 with
+     * `x-archive-redirect-reason: found capture at <YmdHis>` and a `location`
+     * header pointing at the newest snapshot, or 404 if nothing is archived.
+     * Orders of magnitude faster than `/cdx/search/cdx` for a one-shot
+     * "is this URL archived?" lookup.
+     *
+     * The `9999` path segment is an out-of-range timestamp, which Wayback
+     * clamps to the most recent capture.
+     */
+    public static function latestCaptureUrl(string $url): string
+    {
+        return self::baseUrl(self::CDX_BASE_URL_ENV, 'https://web.archive.org')
+            . '/web/9999/' . $url;
+    }
+
     private static function baseUrl(string $specificEnv, string $default): string
     {
         $global = self::env(self::GLOBAL_BASE_URL_ENV);

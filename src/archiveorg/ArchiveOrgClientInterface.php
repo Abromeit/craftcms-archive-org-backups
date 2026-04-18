@@ -20,4 +20,13 @@ interface ArchiveOrgClientInterface
      * @return array{timestamp:string, original:string}|null
      */
     public function getLatestCdxCapture(string $url): ?array;
+
+    /**
+     * Fast "is this URL archived, and when?" lookup via Wayback's
+     * `/web/2/<url>` redirect endpoint. Much faster than CDX for one-shot
+     * probes.
+     *
+     * @return array{timestamp:string, original:string}|null
+     */
+    public function getLatestAvailableSnapshot(string $url): ?array;
 }
