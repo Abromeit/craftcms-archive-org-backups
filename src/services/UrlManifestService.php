@@ -213,13 +213,13 @@ final class UrlManifestService extends Component
 
     private function isSeoSettingsRobotsField(object $field): bool
     {
-        $generalEnabledFields = $field->generalEnabledFields ?? null;
-
-        if (($field->generalTabEnabled ?? null) !== true || !is_array($generalEnabledFields)) {
+        if (empty($field->generalTabEnabled ?? null)) {
             return false;
         }
 
-        return in_array('robots', $generalEnabledFields, true);
+        $generalEnabledFields = (array) ($field->generalEnabledFields ?? []);
+
+        return in_array('robots', $generalEnabledFields, false);
     }
 
     private function extractSeoSettingsRobotsDirective(Entry $entry, string $fieldHandle): ?string
